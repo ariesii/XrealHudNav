@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:
+  workflow_dispatch: # 支援在 GitHub 網頁上隨時手動點擊按鈕編譯
 
 jobs:
   build:
@@ -22,9 +22,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 安裝 Gradle 並產生 Wrapper
+      - name: 設定 Android SDK
+        uses: actions/setup-android@v3
+
+      - name: 自動產生 Gradle Wrapper 執行檔
         run: |
-          sudo apt-get update && sudo apt-get install -y gradle
           gradle wrapper --gradle-version 8.4
           chmod +x ./gradlew
 
