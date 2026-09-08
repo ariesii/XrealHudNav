@@ -1,23 +1,17 @@
 package com.xreal.hudnav.model
 
 /**
+ * 紅綠燈號誌狀態
+ */
+enum class TrafficLightState(val label: String, val colorHex: String) {
+    NONE("無號誌", "#000000"),
+    RED("紅燈", "#FF3B30"),
+    GREEN("綠燈", "#34C759"),
+    YELLOW("黃燈", "#FFCC00")
+}
+
+/**
  * 導航即時資訊資料結構
- *
- * @property maneuver 當前轉向動作類型
- * @property distance 距離下一個轉彎處的距離（例如 "100 公尺" 或 "200米"）
- * @property distanceMeters 數值化距離（公尺），用於智能喚醒與進度條計算
- * @property roadNumber 道路或國道/縣道編號（例如 "106"、"台64"）
- * @property roadName 道路名稱（例如 "民族路"）
- * @property nextAction 接下來的連續轉彎提醒（例如 "接下來 ↰ 106縣道"）
- * @property eta 預計抵達時間（例如 "上午10:12"）
- * @property remainingTime 剩餘行車時間（例如 "23 分鐘"）
- * @property remainingDistance 剩餘總里程（例如 "11 公里"）
- * @property currentSpeed 即時 GPS 車速 (km/h)
- * @property speedLimit 目前路段速限 (km/h，例如 50)
- * @property cameraWarning 測速相機/科技執法警示標籤（例如 "📷 50"）
- * @property cameraDistance 距離測速相機的距離（公尺，如 280）
- * @property mapSource 導航來源（"Google Maps" 或 "高德地圖"）
- * @property isNavigating 目前是否處於有效導航狀態
  */
 data class NavInfo(
     val maneuver: ManeuverType = ManeuverType.STRAIGHT,
@@ -33,6 +27,8 @@ data class NavInfo(
     val speedLimit: Int = 50,
     val cameraWarning: String? = null,
     val cameraDistance: Int? = null,
+    val trafficLightState: TrafficLightState = TrafficLightState.NONE,
+    val trafficLightSeconds: Int? = null,
     val mapSource: String = "Google Maps",
     val isNavigating: Boolean = false
 ) {
@@ -42,11 +38,16 @@ data class NavInfo(
     fun isSpeeding(): Boolean = currentSpeed > speedLimit && speedLimit > 0
 
     /**
+     * 是否有紅綠燈倒數資訊
+     */
+    fun hasTrafficLight(): Boolean = trafficLightState != TrafficLightState.NONE && trafficLightSeconds != null && trafficLightSeconds > 0
+
+    /**
      * 組合道路標示顯示字串
      */
     fun getFullRoadDisplay(): String {
         return if (!roadNumber.isNullOrBlank()) {
-            "[] "
+            "[$roadNumber] $roadName"
         } else {
             roadName
         }

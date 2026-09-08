@@ -18,12 +18,15 @@ import com.xreal.hudnav.R
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
-import com.xreal.hudnav.model.TrafficLightState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * XREAL Air 2 Pro 眼鏡端專用 Presentation 渲染視窗
+ * 具備 Smart Glance 自動淡出喚醒、轉向流光呼吸動態與時速測速預警
+ */
 class XrealHudPresentation(
     outerContext: Context,
     display: Display
@@ -43,7 +46,7 @@ class XrealHudPresentation(
     private lateinit var tvTripSummary: TextView
     private lateinit var tvStandbyHint: TextView
 
-    // 時速、測速與紅綠燈
+    // 時速與測速照相
     private lateinit var layoutSpeedometer: LinearLayout
     private lateinit var tvSpeedValue: TextView
     private lateinit var tvSpeedUnit: TextView
@@ -52,16 +55,11 @@ class XrealHudPresentation(
     private lateinit var tvCameraDistance: TextView
     private lateinit var tvMapSourceTag: TextView
 
-    // 紅綠燈秒數倒數膠囊
-    private lateinit var layoutTrafficLight: LinearLayout
-    private lateinit var viewTrafficLightDot: View
-    private lateinit var tvTrafficLightSeconds: TextView
-    private lateinit var tvTrafficLightLabel: TextView
-
     // 距離倒數進度光條
     private lateinit var layoutProgressTrack: View
     private lateinit var viewProgressBar: View
 
+    // 轉向呼吸流光動畫
     private var arrowFlowAnimator: ValueAnimator? = null
     private var isGlanceHidden = false
 
@@ -101,39 +99,39 @@ class XrealHudPresentation(
         tvCameraDistance = findViewById(R.id.tvCameraDistance)
         tvMapSourceTag = findViewById(R.id.tvMapSourceTag)
 
-        layoutTrafficLight = findViewById(R.id.layoutTrafficLight)
-        viewTrafficLightDot = findViewById(R.id.viewTrafficLightDot)
-        tvTrafficLightSeconds = findViewById(R.id.tvTrafficLightSeconds)
-        tvTrafficLightLabel = findViewById(R.id.tvTrafficLightLabel)
-
         layoutProgressTrack = findViewById(R.id.layoutProgressTrack)
         viewProgressBar = findViewById(R.id.viewProgressBar)
     }
 
     private fun setupFlowAnimation() {
-        arrowFlowAnimator = ValueAnimator.ofFloat(1.0f, 0.4f, 1.0f).apply {
-            duration = 1000
+        // 轉向箭頭平滑呼吸流光動畫 (1.0 -> 0.4 -> 1.0)
+        arrowFlowAnimator = ValueAnimator.ofFloat(1.0f, 0.45f, 1.0f).apply {
+            duration = 1100
             repeatCount = ValueAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { animator ->
-                ivManeuver.alpha = animator.animatedValue as Float
+                val alphaVal = animator.animatedValue as Float
+                ivManeuver.alpha = alphaVal
             }
         }
     }
 
     private fun observeNavState() {
+        // 監聽導航狀態與各類數據更新
         scope.launch {
             NavStateRepository.navState.collectLatest { navInfo ->
                 renderNavInfo(navInfo)
             }
         }
 
+        // 監聽時速表開關
         scope.launch {
             NavStateRepository.isSpeedometerEnabled.collectLatest { enabled ->
                 layoutSpeedometer.visibility = if (enabled) View.VISIBLE else View.GONE
             }
         }
 
+        // 監聽位置與縮放微調
         scope.launch {
             NavStateRepository.hudOffsetX.collectLatest { x ->
                 hudContainer.translationX = x
@@ -165,46 +163,32 @@ class XrealHudPresentation(
         tvStandbyHint.visibility = View.GONE
         layoutSpeedometer.visibility = if (NavStateRepository.isSpeedometerEnabled.value) View.VISIBLE else View.GONE
 
-        // 1. 放大後的車速與超速顏色
+        // 1. 處理 GPS 時速與超速顏色
         tvSpeedValue.text = info.currentSpeed.toString()
         if (info.isSpeeding()) {
+            // 超速：高對比警告琥珀黃
             tvSpeedValue.setTextColor(ContextCompat.getColor(context, R.color.hud_accent_amber))
         } else {
+            // 正常速度：霓虹青綠
             tvSpeedValue.setTextColor(ContextCompat.getColor(context, R.color.hud_accent_cyan))
         }
 
-        // 2. 智慧紅綠燈秒數倒數膠囊
-        if (info.hasTrafficLight()) {
-            layoutTrafficLight.visibility = View.VISIBLE
-            tvTrafficLightSeconds.text = "${info.trafficLightSeconds}s"
-            val color = Color.parseColor(info.trafficLightState.colorHex)
-            tvTrafficLightSeconds.setTextColor(color)
-            viewTrafficLightDot.backgroundTintList = ContextCompat.getColorStateList(context, android.R.color.white)
-            viewTrafficLightDot.background.setTint(color)
-            tvTrafficLightLabel.text = when (info.trafficLightState) {
-                TrafficLightState.RED -> "紅燈等待"
-                TrafficLightState.GREEN -> "綠燈通行"
-                TrafficLightState.YELLOW -> "注意減速"
-                else -> ""
-            }
-        } else {
-            layoutTrafficLight.visibility = View.GONE
-        }
-
-        // 3. 測速照相提醒
+        // 2. 處理測速照相機警示 Chip
         if (!info.cameraWarning.isNullOrBlank()) {
             tvCameraTag.text = info.cameraWarning
-            tvCameraDistance.text = "${info.cameraDistance ?: 0}m"
+            tvCameraDistance.text = "m"
             layoutCameraAlert.visibility = View.VISIBLE
         } else {
             layoutCameraAlert.visibility = View.GONE
         }
 
+        // 3. 地圖來源標示
         tvMapSourceTag.text = info.mapSource
 
+        // 4. Smart Glance 智能自動喚醒與淡出邏輯
         handleSmartGlance(info)
 
-        // 4. 轉向向量圖標與動態呼吸流光
+        // 5. 轉向向量圖標與動態呼吸流光
         ivManeuver.setImageResource(info.maneuver.iconResId)
         val isTurnManeuver = info.maneuver != ManeuverType.STRAIGHT && info.maneuver != ManeuverType.DESTINATION
         if (isTurnManeuver && info.distanceMeters <= 350) {
@@ -216,7 +200,7 @@ class XrealHudPresentation(
             ivManeuver.alpha = 1.0f
         }
 
-        // 5. 轉向距離與路名
+        // 6. 轉彎距離與道路標示
         tvDistance.text = info.distance
         if (!info.roadNumber.isNullOrBlank()) {
             tvRoadNumber.text = info.roadNumber
@@ -226,10 +210,10 @@ class XrealHudPresentation(
         }
         tvRoadName.text = info.roadName
 
-        // 6. 距離倒數進度光條
+        // 7. 距離倒數進度光條（逼近路口 500m ➔ 0m）
         updateProgressBar(info.distanceMeters)
 
-        // 7. 接下來動作與行程進度
+        // 8. 接下來轉向與總覽
         if (!info.nextAction.isNullOrBlank()) {
             tvNextAction.text = info.nextAction
             layoutNextAction.visibility = View.VISIBLE
@@ -250,6 +234,9 @@ class XrealHudPresentation(
         }
     }
 
+    /**
+     * 處理 Smart Glance 智能淡出：長途直行自動淡出以維持 100% 透明視界，逼近路口自動淡入
+     */
     private fun handleSmartGlance(info: NavInfo) {
         val smartGlanceOn = NavStateRepository.isSmartGlanceEnabled.value
         val threshold = NavStateRepository.smartGlanceThreshold.value
@@ -257,6 +244,7 @@ class XrealHudPresentation(
         hudContainer.visibility = View.VISIBLE
 
         if (smartGlanceOn) {
+            // 若為長途直行且距離大於閾值
             val shouldHide = info.maneuver == ManeuverType.STRAIGHT && info.distanceMeters > threshold
             if (shouldHide && !isGlanceHidden) {
                 isGlanceHidden = true
@@ -279,9 +267,13 @@ class XrealHudPresentation(
         }
     }
 
+    /**
+     * 動態縮減 2dp 微光倒數進度光條
+     */
     private fun updateProgressBar(distanceMeters: Int) {
         val totalTrackWidthPx = layoutProgressTrack.layoutParams.width.toFloat()
         val clampedMeters = min(max(distanceMeters, 0), 500)
+        // 剩餘比例 (從 500m 到 0m)
         val ratio = clampedMeters / 500f
         val newWidth = (totalTrackWidthPx * ratio).toInt()
 

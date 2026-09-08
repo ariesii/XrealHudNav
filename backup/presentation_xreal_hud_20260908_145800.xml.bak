@@ -2,9 +2,10 @@
 <!-- 
     XREAL Air 2 Pro 專用 HUD 佈局 (1920x1080)
     升級亮點：
-    1. 車速字體震撼放大至 54sp，眼角餘光瞥視極度清晰
-    2. 新增智慧紅綠燈秒數倒數膠囊 (如 🔴 24s / 🟢 15s)
-    3. 轉向流光動態與微光進度條
+    1. 全屏純黑背景 (#000000) 物理全透明
+    2. Smart Glance 智能平滑淡出與喚醒
+    3. 右上角極簡 GPS 時速表與測速相機警告
+    4. 轉向流光箭頭與 2dp 微光距離倒數條
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -12,18 +13,18 @@
     android:layout_height="match_parent"
     android:background="@color/hud_background">
 
-    <!-- 右上角資訊區：54sp 大字體車速 + 測速照相提醒 + 智慧紅綠燈秒數膠囊 -->
+    <!-- 右上角極簡資訊區：GPS 時速表 + 測速照相機警示標籤 -->
     <LinearLayout
         android:id="@+id/layoutSpeedometer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="28dp"
         android:layout_marginEnd="36dp"
         android:gravity="end"
         android:orientation="vertical">
 
-        <!-- 震撼大字體 GPS 車速數值 (54sp) -->
+        <!-- 時速數值與單位 -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -34,12 +35,8 @@
                 android:id="@+id/tvSpeedValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:shadowColor="#CC000000"
-                android:shadowDx="2"
-                android:shadowDy="2"
-                android:shadowRadius="4"
                 android:textColor="@color/hud_accent_cyan"
-                android:textSize="54sp"
+                android:textSize="32sp"
                 android:textStyle="bold"
                 tools:text="48" />
 
@@ -47,55 +44,11 @@
                 android:id="@+id/tvSpeedUnit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_marginBottom="8dp"
-                android:shadowColor="#CC000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="2"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="4dp"
                 android:text="km/h"
                 android:textColor="@color/hud_text_secondary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 即時智慧紅綠燈秒數倒數膠囊 (例如 🔴 24s / 🟢 15s) -->
-        <LinearLayout
-            android:id="@+id/layoutTrafficLight"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/bg_hud_badge"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <View
-                android:id="@+id/viewTrafficLightDot"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/bg_hud_badge"
-                android:backgroundTint="#FF3B30" />
-
-            <TextView
-                android:id="@+id/tvTrafficLightSeconds"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FF3B30"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:text="24s" />
-
-            <TextView
-                android:id="@+id/tvTrafficLightLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:textColor="@color/hud_text_secondary"
-                android:textSize="12sp"
-                tools:text="紅燈等待" />
+                android:textSize="13sp" />
         </LinearLayout>
 
         <!-- 測速照相機警示 Chip (如 [📷 50] 280m) -->
@@ -103,7 +56,7 @@
             android:id="@+id/layoutCameraAlert"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:background="@drawable/bg_hud_badge"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -115,7 +68,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/hud_accent_amber"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 tools:text="📷 50" />
 
@@ -125,7 +78,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:textColor="@color/hud_text_primary"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 tools:text="280m" />
         </LinearLayout>
 
@@ -135,18 +88,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textColor="#44FFFFFF"
-            android:textSize="11sp"
-            tools:text="高德地圖" />
+            android:textColor="#33FFFFFF"
+            android:textSize="10sp"
+            tools:text="Google Maps" />
     </LinearLayout>
 
-    <!-- 主 HUD 導航指引區 (位於上方中央偏左，完全避開前方視線) -->
+    <!-- 主 HUD 導航指引區 (位於上方中央，支援微調位移與 Smart Glance 淡入淡出) -->
     <LinearLayout
         android:id="@+id/hudContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="28dp"
         android:orientation="vertical"
         android:padding="12dp">
 
@@ -157,13 +110,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <!-- 向量轉向箭頭 (支援動態呼吸流光) -->
+            <!-- 向量轉向箭頭 (支援轉彎動態流光呼吸動畫) -->
             <ImageView
                 android:id="@+id/ivManeuver"
-                android:layout_width="68dp"
-                android:layout_height="68dp"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
                 android:contentDescription="轉向指示"
-                android:src="@drawable/ic_arrow_turn_right" />
+                android:src="@drawable/ic_arrow_straight" />
 
             <!-- 距離與道路標示 -->
             <LinearLayout
@@ -178,9 +131,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/hud_accent_cyan"
-                    android:textSize="30sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
-                    tools:text="48 公尺" />
+                    tools:text="150 公尺" />
 
                 <!-- 道路標示列（編號標籤 + 道路名稱） -->
                 <LinearLayout
@@ -200,7 +153,7 @@
                         android:textColor="@color/hud_text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:visibility="gone"
+                        android:visibility="visible"
                         tools:text="106" />
 
                     <!-- 主要道路名稱 -->
@@ -213,7 +166,7 @@
                         android:shadowDy="1"
                         android:shadowRadius="2"
                         android:textColor="@color/hud_text_primary"
-                        android:textSize="28sp"
+                        android:textSize="26sp"
                         android:textStyle="bold"
                         tools:text="民族路" />
                 </LinearLayout>
@@ -222,13 +175,13 @@
 
         </LinearLayout>
 
-        <!-- 2dp 極細微光距離倒數進度條 -->
+        <!-- 2dp 極細微光距離倒數線 (逼近路口時動態平滑縮減) -->
         <FrameLayout
             android:id="@+id/layoutProgressTrack"
             android:layout_width="260dp"
             android:layout_height="3dp"
             android:layout_marginTop="10dp"
-            android:layout_marginStart="84dp"
+            android:layout_marginStart="80dp"
             android:background="#1AFFFFFF">
 
             <View
@@ -238,13 +191,13 @@
                 android:background="@color/hud_accent_cyan" />
         </FrameLayout>
 
-        <!-- 次要提示與接下來動作 (如 "請注意觀察周邊環境") -->
+        <!-- 次要提示與接下來動作 (如 "接下來 ↰ 106縣道") -->
         <LinearLayout
             android:id="@+id/layoutNextAction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:layout_marginStart="84dp"
+            android:layout_marginStart="80dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -254,16 +207,16 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/hud_accent_amber"
                 android:textSize="17sp"
-                tools:text="請注意觀察周邊環境，謹慎駕駛" />
+                tools:text="接下來 ↰ 106縣道" />
         </LinearLayout>
 
-        <!-- 行程進度列 -->
+        <!-- 輔助資訊列：剩餘時間 / 總里程 / ETA -->
         <LinearLayout
             android:id="@+id/layoutTripSummary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:layout_marginStart="84dp"
+            android:layout_marginStart="80dp"
             android:orientation="horizontal">
 
             <TextView
@@ -272,7 +225,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/hud_text_secondary"
                 android:textSize="14sp"
-                tools:text="28 分鐘 · 10.6 公里 · 下午 3:19" />
+                tools:text="23 分鐘 · 11 公里 · 上午 10:12" />
         </LinearLayout>
 
     </LinearLayout>

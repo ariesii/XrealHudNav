@@ -3,12 +3,9 @@ package com.xreal.hudnav.service
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
+import com.xreal.hudnav.model.TrafficLightState
 import kotlinx.coroutines.*
 
-/**
- * 升級版路況模擬器
- * 模擬時速變換、測速相機警示、Smart Glance 自動喚醒與高德地圖情境
- */
 object NavDemoSimulator {
     private var simulationJob: Job? = null
 
@@ -16,111 +13,103 @@ object NavDemoSimulator {
         stopSimulation()
         simulationJob = scope.launch(Dispatchers.Default) {
             val demoSteps = listOf(
-                // 情境 1：長途直行 (500m) -> 測試 Smart Glance 自動淡出極致淨空
+                // 情境 1：使用者高德截圖原貌 -> 48m 民族路，右轉，紅燈 24 秒等待！
                 NavInfo(
-                    maneuver = ManeuverType.STRAIGHT,
-                    distance = "500 公尺",
-                    distanceMeters = 500,
-                    roadNumber = "106",
-                    roadName = "民族路",
-                    nextAction = "接下來 ↰ 106縣道",
-                    remainingTime = "23 分鐘",
-                    remainingDistance = "11 公里",
-                    eta = "上午 10:12",
-                    currentSpeed = 45,
-                    speedLimit = 50,
-                    cameraWarning = null,
-                    cameraDistance = null,
-                    mapSource = "Google Maps",
-                    isNavigating = true
-                ),
-                // 情境 2：前方測速照相機警示出現！[📷 50] 350m
-                NavInfo(
-                    maneuver = ManeuverType.STRAIGHT,
-                    distance = "400 公尺",
-                    distanceMeters = 400,
-                    roadNumber = "106",
-                    roadName = "民族路",
-                    nextAction = "接下來 ↰ 106縣道",
-                    remainingTime = "22 分鐘",
-                    remainingDistance = "10.9 公里",
-                    eta = "上午 10:12",
-                    currentSpeed = 48,
-                    speedLimit = 50,
-                    cameraWarning = "📷 50",
-                    cameraDistance = 350,
-                    mapSource = "Google Maps",
-                    isNavigating = true
-                ),
-                // 情境 3：超速警示！車速拉高至 56 km/h，時速數字變黃/紅，相機逼近 120m
-                NavInfo(
-                    maneuver = ManeuverType.STRAIGHT,
-                    distance = "320 公尺",
-                    distanceMeters = 320,
-                    roadNumber = "106",
-                    roadName = "民族路",
-                    nextAction = "接下來 ↰ 106縣道",
-                    remainingTime = "22 分鐘",
-                    remainingDistance = "10.8 公里",
-                    eta = "上午 10:12",
-                    currentSpeed = 56, // 超速！
-                    speedLimit = 50,
-                    cameraWarning = "📷 50 超速!",
-                    cameraDistance = 120,
-                    mapSource = "Google Maps",
-                    isNavigating = true
-                ),
-                // 情境 4：逼近路口 (<300m) -> Smart Glance 自動喚醒，左轉流光動態啟動！
-                NavInfo(
-                    maneuver = ManeuverType.TURN_LEFT,
-                    distance = "150 公尺後左轉",
-                    distanceMeters = 150,
-                    roadNumber = "106",
-                    roadName = "民族路",
-                    nextAction = "接下來 ↰ 106縣道",
-                    remainingTime = "21 分鐘",
-                    remainingDistance = "10.7 公里",
-                    eta = "上午 10:12",
-                    currentSpeed = 38,
-                    speedLimit = 50,
-                    cameraWarning = null, // 已通過相機
-                    cameraDistance = null,
-                    mapSource = "Google Maps",
-                    isNavigating = true
-                ),
-                // 情境 5：切換為高德地圖導航風格！
-                NavInfo(
-                    maneuver = ManeuverType.SLIGHT_RIGHT,
-                    distance = "80米後 向右前方行駛",
-                    distanceMeters = 80,
+                    maneuver = ManeuverType.TURN_RIGHT,
+                    distance = "48m",
+                    distanceMeters = 48,
                     roadNumber = null,
-                    roadName = "新府路",
-                    nextAction = "進入 文化路",
-                    remainingTime = "18 分鐘",
-                    remainingDistance = "9.2 公里",
-                    eta = "上午 10:15",
-                    currentSpeed = 32,
+                    roadName = "民族路",
+                    nextAction = "請注意觀察周邊環境，謹慎駕駛",
+                    remainingTime = "28 分鐘",
+                    remainingDistance = "10.6 公里",
+                    eta = "下午 3:19",
+                    currentSpeed = 35,
                     speedLimit = 50,
                     cameraWarning = null,
                     cameraDistance = null,
+                    trafficLightState = TrafficLightState.RED,
+                    trafficLightSeconds = 24,
                     mapSource = "高德地圖",
                     isNavigating = true
                 ),
-                // 情境 6：終點抵達
+                // 情境 2：紅綠燈秒數倒數至 5 秒
                 NavInfo(
-                    maneuver = ManeuverType.DESTINATION,
-                    distance = "抵達目的地",
-                    distanceMeters = 0,
+                    maneuver = ManeuverType.TURN_RIGHT,
+                    distance = "30m",
+                    distanceMeters = 30,
                     roadNumber = null,
-                    roadName = "板橋車站 (已在右側)",
-                    nextAction = null,
-                    remainingTime = "1 分鐘",
-                    remainingDistance = "20 公尺",
-                    eta = "上午 10:16",
-                    currentSpeed = 0,
+                    roadName = "民族路",
+                    nextAction = "請注意觀察周邊環境，謹慎駕駛",
+                    remainingTime = "28 分鐘",
+                    remainingDistance = "10.6 公里",
+                    eta = "下午 3:19",
+                    currentSpeed = 20,
                     speedLimit = 50,
                     cameraWarning = null,
                     cameraDistance = null,
+                    trafficLightState = TrafficLightState.RED,
+                    trafficLightSeconds = 5,
+                    mapSource = "高德地圖",
+                    isNavigating = true
+                ),
+                // 情境 3：號誌轉為綠燈！綠燈剩餘 18s，開始右轉
+                NavInfo(
+                    maneuver = ManeuverType.TURN_RIGHT,
+                    distance = "即將右轉",
+                    distanceMeters = 10,
+                    roadNumber = null,
+                    roadName = "民族路",
+                    nextAction = "右轉進入 民族路",
+                    remainingTime = "27 分鐘",
+                    remainingDistance = "10.5 公里",
+                    eta = "下午 3:19",
+                    currentSpeed = 28,
+                    speedLimit = 50,
+                    cameraWarning = null,
+                    cameraDistance = null,
+                    trafficLightState = TrafficLightState.GREEN,
+                    trafficLightSeconds = 18,
+                    mapSource = "高德地圖",
+                    isNavigating = true
+                ),
+                // 情境 4：進入民族路順暢行駛，時速加速至 56 km/h（展示放大時速與超速警示黃色），前方測速相機 [📷 50] 280m 出現！
+                NavInfo(
+                    maneuver = ManeuverType.STRAIGHT,
+                    distance = "600 公尺",
+                    distanceMeters = 600,
+                    roadNumber = "106",
+                    roadName = "民族路",
+                    nextAction = "接下來 ↰ 106縣道",
+                    remainingTime = "25 分鐘",
+                    remainingDistance = "10.1 公里",
+                    eta = "下午 3:19",
+                    currentSpeed = 56, // 超速！
+                    speedLimit = 50,
+                    cameraWarning = "📷 50 超速!",
+                    cameraDistance = 280,
+                    trafficLightState = TrafficLightState.NONE,
+                    trafficLightSeconds = null,
+                    mapSource = "Google Maps",
+                    isNavigating = true
+                ),
+                // 情境 5：長途直行 -> 觸發 Smart Glance 自動淡出極致淨空
+                NavInfo(
+                    maneuver = ManeuverType.STRAIGHT,
+                    distance = "1.2 公里",
+                    distanceMeters = 1200,
+                    roadNumber = "106",
+                    roadName = "民族路",
+                    nextAction = "直行通過 縣民大道",
+                    remainingTime = "22 分鐘",
+                    remainingDistance = "9.5 公里",
+                    eta = "下午 3:19",
+                    currentSpeed = 48,
+                    speedLimit = 50,
+                    cameraWarning = null,
+                    cameraDistance = null,
+                    trafficLightState = TrafficLightState.NONE,
+                    trafficLightSeconds = null,
                     mapSource = "Google Maps",
                     isNavigating = true
                 )
@@ -130,7 +119,7 @@ object NavDemoSimulator {
             while (isActive) {
                 val step = demoSteps[index % demoSteps.size]
                 NavStateRepository.updateNavInfo(step)
-                delay(3800) // 每 3.8 秒推進一個情境
+                delay(3800)
                 index++
             }
         }
