@@ -10,46 +10,59 @@ import com.xreal.hudnav.model.NavStateRepository
 import java.util.regex.Pattern
 
 /**
- * Google Maps 即時導航通知監聽服務
- * 透過 Android 系統 NotificationListenerService 即時攔截並解析導航指示
+ * 雙地圖即時導航通知監聽服務
+ * 同時支援 Google Maps 與高德地圖（AutoNavi / Amap）
  */
 class MapsNotificationListenerService : NotificationListenerService() {
 
     companion object {
-        private const val TAG = "MapsNotification"
-        private const val MAPS_PACKAGE = "com.google.android.apps.maps"
+        private const val TAG = "MultiMapNotification"
         
-        // 正則表達式：擷取距離（例如 "100 公尺"、"1.5 公里"、"200 m"）
-        private val DISTANCE_PATTERN = Pattern.compile("(\\d+(\\.\\d+)?\\s*(公尺|公里|m|km))", Pattern.CASE_INSENSITIVE)
+        // 支援的地圖應用套件名稱
+        private const val PKG_GOOGLE_MAPS = "com.google.android.apps.maps"
+        private const val PKG_AMAP = "com.autonavi.minimap"
+        private const val PKG_AMAP_AUTO = "com.autonavi.amapauto"
+
+        // 正則表達式：擷取距離（相容繁體「公尺/公里」、簡體「米/公里」、英文「m/km」）
+        private val DISTANCE_PATTERN = Pattern.compile("(\\d+(\\.\\d+)?\\s*(公尺|公里|米|m|km))", Pattern.CASE_INSENSITIVE)
         
-        // 正則表達式：擷取道路編號（例如 106縣道、台64線、國道一號）
-        private val ROAD_NUM_PATTERN = Pattern.compile("(\\b\\d{1,3}\\b|台\\d+|國道\\d+|市道\\d+)")
+        // 正則表達式：擷取道路編號（例如 106、台64、G15、S20）
+        private val ROAD_NUM_PATTERN = Pattern.compile("(\\b[A-Za-z]?\\d{1,4}\\b|台\\d+|國道\\d+|市道\\d+|省道\\d+)")
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        if (sbn == null || sbn.packageName != MAPS_PACKAGE) return
+        if (sbn == null) return
+
+        val pkg = sbn.packageName
+        if (pkg != PKG_GOOGLE_MAPS && pkg != PKG_AMAP && pkg != PKG_AMAP_AUTO) return
 
         val notification = sbn.notification ?: return
         val extras = notification.extras ?: return
 
-        // 提取主要與次要文字
+        val mapSourceName = when (pkg) {
+            PKG_GOOGLE_MAPS -> "Google Maps"
+            PKG_AMAP -> "高德地圖"
+            PKG_AMAP_AUTO -> "高德車機"
+            else -> "導航"
+        }
+
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
 
-        Log.d(TAG, "攔截到 Google Maps 通知 -> Title: [], Text: [], SubText: []")
+        Log.d(TAG, "[] 攔截通知 -> Title: [], Text: [], SubText: []")
 
         if (title.isBlank() && text.isBlank()) return
 
-        // 解析導航內容
-        parseAndPostNavData(title, text, subText)
+        parseAndPostNavData(mapSourceName, title, text, subText)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        if (sbn?.packageName == MAPS_PACKAGE) {
-            Log.d(TAG, "Google Maps 導航通知已結束")
+        val pkg = sbn?.packageName
+        if (pkg == PKG_GOOGLE_MAPS || pkg == PKG_AMAP || pkg == PKG_AMAP_AUTO) {
+            Log.d(TAG, "導航通知已結束: ")
             NavStateRepository.updateNavInfo(
                 NavInfo(
                     isNavigating = false,
@@ -59,37 +72,38 @@ class MapsNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    /**
-     * 解析 Google Maps 標題與內文字串，抽取 HUD 核心資訊
-     */
-    private fun parseAndPostNavData(title: String, text: String, subText: String) {
-        // 1. 推斷轉向動作
-        val combinedActionText = " "
+    private fun parseAndPostNavData(source: String, title: String, text: String, subText: String) {
+        val combinedActionText = "  "
         val maneuver = ManeuverType.fromText(combinedActionText)
 
-        // 2. 擷取距離
+        // 擷取距離字串與公尺數值
         var distanceStr = ""
-        val distMatcher = DISTANCE_PATTERN.matcher(title)
+        var distanceMeters = 1000
+        val distMatcher = DISTANCE_PATTERN.matcher(title.ifBlank { text })
         if (distMatcher.find()) {
             distanceStr = distMatcher.group(1).orEmpty()
+            distanceMeters = parseDistanceToMeters(distanceStr)
         }
 
-        // 3. 擷取道路編號與主要道路名稱
+        // 擷取道路編號
         var roadNum: String? = null
         val numMatcher = ROAD_NUM_PATTERN.matcher(title)
         if (numMatcher.find()) {
             roadNum = numMatcher.group(1)
         }
 
-        // 清理標題取得道路名稱（去除 "前往"、"直行"、距離等字眼）
+        // 清理標題取得純道路名稱
         var cleanRoadName = title
             .replace("前往", "")
+            .replace("進入", "")
             .replace("直行", "")
             .replace("左轉", "")
             .replace("右轉", "")
+            .replace("沿", "")
+            .replace("行駛", "")
             .replace(distanceStr, "")
             .trim()
-            
+
         if (roadNum != null) {
             cleanRoadName = cleanRoadName.replace(roadNum, "").trim()
         }
@@ -97,30 +111,61 @@ class MapsNotificationListenerService : NotificationListenerService() {
             cleanRoadName = if (roadNum != null) " 道路" else title
         }
 
-        // 4. 解析行車時間與總剩餘里程（通常位於 text 中，例如 "23 分鐘 · 11 公里 · 上午10:12"）
+        // 解析剩餘行程
         var remainingTime = "--"
         var remainingDistance = "--"
         var eta = "--:--"
 
         if (text.isNotBlank()) {
-            val parts = text.split("·", "-", "•").map { it.trim() }
+            val parts = text.split("·", "-", "•", ",").map { it.trim() }
             if (parts.isNotEmpty()) remainingTime = parts[0]
             if (parts.size > 1) remainingDistance = parts[1]
             if (parts.size > 2) eta = parts[2]
         }
 
+        // 保持現有 GPS 車速
+        val currentSpeed = NavStateRepository.navState.value.currentSpeed
+        val cameraWarning = NavStateRepository.navState.value.cameraWarning
+        val cameraDistance = NavStateRepository.navState.value.cameraDistance
+
         val navInfo = NavInfo(
             maneuver = maneuver,
             distance = if (distanceStr.isNotBlank()) distanceStr else "直行",
+            distanceMeters = distanceMeters,
             roadNumber = roadNum,
             roadName = cleanRoadName,
             nextAction = if (subText.isNotBlank()) subText else null,
             eta = eta,
             remainingTime = remainingTime,
             remainingDistance = remainingDistance,
+            currentSpeed = currentSpeed,
+            cameraWarning = cameraWarning,
+            cameraDistance = cameraDistance,
+            mapSource = source,
             isNavigating = true
         )
 
         NavStateRepository.updateNavInfo(navInfo)
+    }
+
+    /**
+     * 將字串距離換算為數值公尺
+     */
+    private fun parseDistanceToMeters(distStr: String): Int {
+        return try {
+            val clean = distStr.lowercase().replace(" ", "")
+            when {
+                clean.contains("公里") || clean.contains("km") -> {
+                    val num = clean.replace("公里", "").replace("km", "").toDouble()
+                    (num * 1000).toInt()
+                }
+                clean.contains("公尺") || clean.contains("米") || clean.contains("m") -> {
+                    clean.replace("公尺", "").replace("米", "").replace("m", "").toInt()
+                }
+                else -> 500
+            }
+        } catch (e: Exception) {
+            500
+        }
     }
 }

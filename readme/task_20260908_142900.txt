@@ -1,0 +1,27 @@
+# XREAL Air 2 Pro 導航 HUD 三大進階功能任務清單 (task.md)
+更新時間：2026-09-08 14:29:00
+
+- [/] 階段一：進階功能架構設計
+  - [x] 設計 GPS 時速與測速相機警示模型
+  - [x] 設計 Smart Glance 自動喚醒與淡入淡出狀態機
+  - [x] 設計動態流光轉向箭頭與微光進度條
+  - [x] 保存實作計畫與備份檔案
+
+- [ ] 階段二：GPS 車速與測速照相模組
+  - [ ] AndroidManifest.xml 加入 GPS 定位權限
+  - [ ] 實作 GpsSpeedManager.kt (LocationManager 時速計算與監聽)
+  - [ ] 實作 SpeedCameraManager.kt (台灣固定測速點資料庫與距離比對)
+
+- [ ] 階段三：智能喚醒與動態視覺模組
+  - [ ] 擴充 NavInfo.kt 與 NavStateRepository.kt
+  - [ ] 實作 DynamicTurnArrowView.kt (呼吸流光與 2dp 微光倒數條)
+  - [ ] 更新 presentation_xreal_hud.xml 支援時速、測速相機標籤與進度條
+  - [ ] 更新 XrealHudPresentation.kt 串接自動淡入淡出動畫
+
+- [ ] 階段四：手機控制中心與模擬器升級
+  - [ ] MainActivity.kt 加入 GPS 權限申請、Smart Glance 開關與時速開關
+  - [ ] 升級 NavDemoSimulator.kt 支援時速動態變化與測速相機展示情境
+
+- [ ] 階段五：GitHub Actions 線上編譯新版本 APK
+  - [ ] 提交修正並推送至 GitHub 觸發自動編譯
+  - [ ] 下載新版 APK 並產出成果報告

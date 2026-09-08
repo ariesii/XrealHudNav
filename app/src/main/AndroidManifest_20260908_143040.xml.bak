@@ -7,10 +7,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- GPS 定位權限（用於即時車速與測速照相距離計算） -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -32,7 +28,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Google Maps 與高德地圖導航通知監聽服務 -->
+        <!-- Google Maps 導航通知監聽服務 -->
         <service
             android:name=".service.MapsNotificationListenerService"
             android:exported="true"

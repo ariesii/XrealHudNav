@@ -1,0 +1,22 @@
+# XREAL Air 2 Pro 導航 HUD 三大進階功能擴充實作計畫
+更新時間：2026-09-08 14:29:00
+
+一、三大功能目標：
+1. 即時 GPS 車速與測速照相警示 (Speedometer & Speed Camera Alert)
+   - 手機 GPS LocationManager 即時速度 (km/h) 監聽
+   - 台灣主要固定測速相機距離計算與逼近警示 ([📷 50] 倒數)
+   - 超速顏色高亮轉換（冷白 -> 亮琥珀黃）
+2. 路口接近自動喚醒與平時極致淨空 (Smart Glance HUD)
+   - 長途直行 (>300m) 自動平滑淡出，視野 100% 回歸真實道路
+   - 逼近路口 (<300m) 或轉向動作自動平滑淡入喚醒
+   - 控制台支援自訂喚醒距離與常駐開關
+3. 動態轉向流光箭頭與距離倒數進度條 (Dynamic Turn Flow)
+   - 左轉/右轉微動態呼吸流光效果，眼角餘光即可秒懂轉向意圖
+   - 2dp 極細微光倒數進度條，平滑呈現逼近路口進度
+
+二、涉及檔案：
+- 新增 GpsSpeedManager.kt、SpeedCameraManager.kt、DynamicTurnArrowView.kt
+- 修改 AndroidManifest.xml (GPS 權限)
+- 修改 NavInfo.kt、NavStateRepository.kt
+- 修改 presentation_xreal_hud.xml、XrealHudPresentation.kt
+- 修改 MainActivity.kt (控制面板新增各功能開關)

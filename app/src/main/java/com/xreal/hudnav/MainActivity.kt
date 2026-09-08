@@ -1,7 +1,9 @@
 package com.xreal.hudnav
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
@@ -11,31 +13,40 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.slider.Slider
+import com.google.android.material.switchmaterial.SwitchMaterial
+import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
 import com.xreal.hudnav.presentation.DisplayAssistant
 import com.xreal.hudnav.service.NavDemoSimulator
+import com.xreal.hudnav.speed.GpsSpeedManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
 
-/**
- * XREAL 導航 HUD 主控制器
- * 負責權限驗證、外接眼鏡生命週期管理、HUD 鏡像預覽與個人化偏好調整
- */
 class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListener {
 
     private lateinit var displayAssistant: DisplayAssistant
+    private lateinit var gpsSpeedManager: GpsSpeedManager
 
-    // UI 元件
+    // 狀態指示
     private lateinit var indicatorGlasses: View
     private lateinit var tvGlassesStatus: TextView
     private lateinit var tvPermissionStatus: TextView
     private lateinit var btnGrantPermission: Button
+    private lateinit var tvGpsPermissionStatus: TextView
+    private lateinit var btnGrantGps: Button
     private lateinit var btnToggleDemo: Button
+
+    // 功能開關
+    private lateinit var switchSmartGlance: SwitchMaterial
+    private lateinit var switchSpeedometer: SwitchMaterial
 
     // 鏡像預覽元件
     private lateinit var previewHudContainer: LinearLayout
@@ -48,6 +59,14 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var previewLayoutTripSummary: LinearLayout
     private lateinit var previewTvTripSummary: TextView
     private lateinit var previewTvStandbyHint: TextView
+    private lateinit var previewLayoutSpeedometer: LinearLayout
+    private lateinit var previewTvSpeedValue: TextView
+    private lateinit var previewLayoutCameraAlert: LinearLayout
+    private lateinit var previewTvCameraTag: TextView
+    private lateinit var previewTvCameraDistance: TextView
+    private lateinit var previewTvMapSourceTag: TextView
+    private lateinit var previewLayoutProgressTrack: View
+    private lateinit var previewViewProgressBar: View
 
     // 微調控制元件
     private lateinit var sliderOffsetX: Slider
@@ -58,9 +77,23 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var tvScaleLabel: TextView
     private lateinit var btnResetOffset: Button
 
+    // GPS 權限申請回呼
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            checkGpsPermission()
+            gpsSpeedManager.startTracking()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        gpsSpeedManager = GpsSpeedManager(this)
 
         initViews()
         setupListeners()
@@ -71,11 +104,13 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     override fun onResume() {
         super.onResume()
         checkNotificationPermission()
+        checkGpsPermission()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         displayAssistant.stopListening()
+        gpsSpeedManager.stopTracking()
         NavDemoSimulator.stopSimulation()
     }
 
@@ -84,7 +119,12 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         tvGlassesStatus = findViewById(R.id.tvGlassesStatus)
         tvPermissionStatus = findViewById(R.id.tvPermissionStatus)
         btnGrantPermission = findViewById(R.id.btnGrantPermission)
+        tvGpsPermissionStatus = findViewById(R.id.tvGpsPermissionStatus)
+        btnGrantGps = findViewById(R.id.btnGrantGps)
         btnToggleDemo = findViewById(R.id.btnToggleDemo)
+
+        switchSmartGlance = findViewById(R.id.switchSmartGlance)
+        switchSpeedometer = findViewById(R.id.switchSpeedometer)
 
         // 預覽視窗
         val previewView = findViewById<View>(R.id.hudPreviewContent)
@@ -99,6 +139,15 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewTvTripSummary = previewView.findViewById(R.id.tvTripSummary)
         previewTvStandbyHint = previewView.findViewById(R.id.tvStandbyHint)
 
+        previewLayoutSpeedometer = previewView.findViewById(R.id.layoutSpeedometer)
+        previewTvSpeedValue = previewView.findViewById(R.id.tvSpeedValue)
+        previewLayoutCameraAlert = previewView.findViewById(R.id.layoutCameraAlert)
+        previewTvCameraTag = previewView.findViewById(R.id.tvCameraTag)
+        previewTvCameraDistance = previewView.findViewById(R.id.tvCameraDistance)
+        previewTvMapSourceTag = previewView.findViewById(R.id.tvMapSourceTag)
+        previewLayoutProgressTrack = previewView.findViewById(R.id.layoutProgressTrack)
+        previewViewProgressBar = previewView.findViewById(R.id.viewProgressBar)
+
         // 微調
         sliderOffsetX = findViewById(R.id.sliderOffsetX)
         sliderOffsetY = findViewById(R.id.sliderOffsetY)
@@ -111,8 +160,24 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
 
     private fun setupListeners() {
         btnGrantPermission.setOnClickListener {
-            // 跳轉至系統通知存取權限設定頁面
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+
+        btnGrantGps.setOnClickListener {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+
+        switchSmartGlance.setOnCheckedChangeListener { _, isChecked ->
+            NavStateRepository.setSmartGlance(isChecked)
+        }
+
+        switchSpeedometer.setOnCheckedChangeListener { _, isChecked ->
+            NavStateRepository.setSpeedometerEnabled(isChecked)
         }
 
         btnToggleDemo.setOnClickListener {
@@ -127,14 +192,13 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             }
         }
 
-        // 微調監聽
         val updateOffset = {
             val x = sliderOffsetX.value
             val y = sliderOffsetY.value
             val scale = sliderScale.value
-            tvOffsetXLabel.text = "水平位置微調 (X Offset):  px"
-            tvOffsetYLabel.text = "垂直高度微調 (Y Offset):  px"
-            tvScaleLabel.text = "縮放比例 (Scale): x"
+            tvOffsetXLabel.text = "水平位置微調 (X Offset): ${x.toInt()} px"
+            tvOffsetYLabel.text = "垂直高度微調 (Y Offset): ${y.toInt()} px"
+            tvScaleLabel.text = "縮放比例 (Scale): ${String.format("%.2f", scale)}x"
             NavStateRepository.updateHudOffset(x, y, scale)
         }
 
@@ -168,6 +232,21 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         }
     }
 
+    private fun checkGpsPermission() {
+        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            tvGpsPermissionStatus.text = "GPS 車速與測速相機：已授權啟用"
+            tvGpsPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_green))
+            btnGrantGps.visibility = View.GONE
+            gpsSpeedManager.startTracking()
+        } else {
+            tvGpsPermissionStatus.text = "GPS 車速與測速相機：未取得定位權限"
+            tvGpsPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
+            btnGrantGps.visibility = View.VISIBLE
+        }
+    }
+
     private fun isNotificationServiceEnabled(): Boolean {
         val pkgName = packageName
         val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
@@ -184,17 +263,21 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     }
 
     private fun observeNavState() {
-        // 觀察導航狀態以更新鏡像預覽視窗
         lifecycleScope.launch {
             NavStateRepository.navState.collectLatest { info ->
                 renderPreview(info)
             }
         }
 
-        // 觀察位移微調以同步預覽視窗
+        lifecycleScope.launch {
+            NavStateRepository.isSpeedometerEnabled.collectLatest { enabled ->
+                previewLayoutSpeedometer.visibility = if (enabled) View.VISIBLE else View.GONE
+            }
+        }
+
         lifecycleScope.launch {
             NavStateRepository.hudOffsetX.collectLatest { x ->
-                previewHudContainer.translationX = x * 0.4f // 縮放預覽微調比例
+                previewHudContainer.translationX = x * 0.4f
             }
         }
         lifecycleScope.launch {
@@ -213,13 +296,34 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private fun renderPreview(info: NavInfo) {
         if (!info.isNavigating) {
             previewHudContainer.visibility = View.GONE
+            previewLayoutSpeedometer.visibility = View.GONE
             previewTvStandbyHint.visibility = View.VISIBLE
             return
         }
 
         previewTvStandbyHint.visibility = View.GONE
         previewHudContainer.visibility = View.VISIBLE
+        previewLayoutSpeedometer.visibility = if (NavStateRepository.isSpeedometerEnabled.value) View.VISIBLE else View.GONE
 
+        // 時速與測速
+        previewTvSpeedValue.text = info.currentSpeed.toString()
+        if (info.isSpeeding()) {
+            previewTvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
+        } else {
+            previewTvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_cyan))
+        }
+
+        if (!info.cameraWarning.isNullOrBlank()) {
+            previewTvCameraTag.text = info.cameraWarning
+            previewTvCameraDistance.text = "${info.cameraDistance ?: 0}m"
+            previewLayoutCameraAlert.visibility = View.VISIBLE
+        } else {
+            previewLayoutCameraAlert.visibility = View.GONE
+        }
+
+        previewTvMapSourceTag.text = info.mapSource
+
+        // 轉向與道路
         previewIvManeuver.setImageResource(info.maneuver.iconResId)
         previewTvDistance.text = info.distance
 
@@ -229,8 +333,15 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         } else {
             previewTvRoadNumber.visibility = View.GONE
         }
-
         previewTvRoadName.text = info.roadName
+
+        // 倒數進度條
+        val trackWidth = previewLayoutProgressTrack.layoutParams.width.toFloat()
+        val clampedMeters = min(max(info.distanceMeters, 0), 500)
+        val ratio = clampedMeters / 500f
+        val params = previewViewProgressBar.layoutParams
+        params.width = max((trackWidth * ratio).toInt(), 4)
+        previewViewProgressBar.layoutParams = params
 
         if (!info.nextAction.isNullOrBlank()) {
             previewTvNextAction.text = info.nextAction
@@ -252,11 +363,10 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         }
     }
 
-    // --- OnGlassesDisplayListener ---
     override fun onGlassesConnected(display: Display) {
         runOnUiThread {
             indicatorGlasses.backgroundTintList = ContextCompat.getColorStateList(this, R.color.hud_accent_green)
-            tvGlassesStatus.text = " ()"
+            tvGlassesStatus.text = "${getString(R.string.glasses_connected)} (${display.name})"
         }
     }
 
