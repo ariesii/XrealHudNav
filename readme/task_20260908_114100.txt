@@ -1,0 +1,26 @@
+# XREAL Air 2 Pro 導航 HUD 專案任務清單 (task.md)
+更新時間：2026-09-08 11:41:00
+
+- [x] 階段一：架構規劃與可行性分析
+  - [x] 確立 Micro-OLED 全透光（全黑背景）與邊緣非侵入式佈局設計
+  - [x] 確立 NotificationListenerService 擷取 Google Maps 轉向資料機制
+  - [x] 確立 Android Presentation API 外接螢幕顯示方案
+  - [x] 產生 Implementation Plan 與 Task 清單並存檔備份
+
+- [x] 階段二：建置 Android 專案基礎骨架
+  - [x] 建立 Gradle 建置腳本與專案結構（build.gradle.kts, settings.gradle.kts）
+  - [x] 配置 AndroidManifest.xml（註冊 Presentation、NotificationListener 權限與服務）
+
+- [x] 階段三：核心資料模型與轉向解析模組
+  - [x] 實作 NavInfo 與 ManeuverType 資料模型
+  - [x] 實作 MapsNotificationListenerService 解析 Google Maps 導航通知
+  - [x] 實作 Demo 模擬資料產生器（供離線/室內測試）
+
+- [x] 階段四：眼鏡端 Presentation 與透明 HUD 視圖
+  - [x] 設計 presentation_xreal_hud.xml（極簡純黑背景、高對比霓虹青綠向量箭頭、道路標示）
+  - [x] 實作 XrealHudPresentation（支援動態更新、平滑淡入淡出、微調位移）
+  - [x] 實作 DisplayAssistant（監聽 XREAL 眼鏡 DisplayManager 插入與拔出事件）
+
+- [x] 階段五：手機端控制器與即時預覽
+  - [x] 實作 MainActivity（通知授權引導、眼鏡連線狀態、即時鏡像預覽視窗、HUD 偏好微調）
+  - [x] 完成 README.md 專案說明與單元測試

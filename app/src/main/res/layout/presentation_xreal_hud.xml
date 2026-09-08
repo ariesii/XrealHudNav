@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    XREAL Air 2 Pro 專用 HUD 佈局 (1920x1080)
+    關鍵設計：
+    1. 背景全純黑 (#000000) -> Micro-OLED 物理完全透明
+    2. 中央大面積留黑無遮蔽 -> 確保看清前方實際路況
+    3. HUD 錨定在視野上方 (Glanceable UI)，視線瞥一眼即可
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/hud_background">
+
+    <!-- HUD 可微調位移容器 (支援使用者瞳距與偏好微調) -->
+    <LinearLayout
+        android:id="@+id/hudContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="32dp"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 上排：轉向箭頭與主要道路標示 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- 向量轉向箭頭 -->
+            <ImageView
+                android:id="@+id/ivManeuver"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="轉向指示"
+                android:src="@drawable/ic_arrow_straight" />
+
+            <!-- 轉向距離與動作說明 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:orientation="vertical">
+
+                <!-- 距離高亮標示 -->
+                <TextView
+                    android:id="@+id/tvDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/hud_accent_cyan"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    tools:text="150 公尺" />
+
+                <!-- 道路標示列（編號標籤 + 道路名稱） -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- 道路編號框 (如 [106]) -->
+                    <TextView
+                        android:id="@+id/tvRoadNumber"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_hud_badge"
+                        android:textColor="@color/hud_text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:visibility="visible"
+                        tools:text="106" />
+
+                    <!-- 主要道路名稱 -->
+                    <TextView
+                        android:id="@+id/tvRoadName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="1"
+                        android:shadowDy="1"
+                        android:shadowRadius="2"
+                        android:textColor="@color/hud_text_primary"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        tools:text="民族路" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 下排：次要提示與接下來動作 (如 "接下來 ↰ 106縣道") -->
+        <LinearLayout
+            android:id="@+id/layoutNextAction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="80dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvNextAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/hud_accent_amber"
+                android:textSize="18sp"
+                tools:text="接下來 ↰ 106縣道" />
+        </LinearLayout>
+
+        <!-- 輔助資訊列：剩餘時間 / 總里程 / ETA -->
+        <LinearLayout
+            android:id="@+id/layoutTripSummary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginStart="80dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvTripSummary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/hud_text_secondary"
+                android:textSize="15sp"
+                tools:text="23 分鐘 · 11 公里 · 上午 10:12" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 視野中心完全淨空提示（僅在未導航時微弱呈現） -->
+    <TextView
+        android:id="@+id/tvStandbyHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textColor="#33FFFFFF"
+        android:textSize="14sp"
+        android:text="XREAL Air HUD 已就緒 · 等待 Google Maps 導航啟動" />
+
+</FrameLayout>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>XREAL Air 2 Pro 導航 HUD 成果報告</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 24px; max-width: 800px; margin: 0 auto; color: #333; }
+h1, h2 { color: #1a73e8; }
+.badge { background: #00e5ff; color: #000; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+th { background-color: #f2f2f2; }
+</style>
+</head>
+<body>
+<h1>XREAL Air 2 Pro 原生 Android 導航 HUD 成果報告</h1>
+<p><strong>更新時間：</strong> 2026-09-08 11:41:00</p>
+<h2>一、成果亮點</h2>
+<ul>
+  <li><strong>Micro-OLED 全透光：</strong> 全黑背景 (#000000)，無任何底色容器，像素關閉物理透光，不遮蔽前方視線。</li>
+  <li><strong>Google Maps 即時連動：</strong> 使用 <code>NotificationListenerService</code> 免費抓取道路標示與轉向箭頭。</li>
+  <li><strong>獨立雙螢幕投射：</strong> 使用 Android <code>Presentation</code> API 自動管理眼鏡插拔。</li>
+</ul>
+<h2>二、核心模組清單</h2>
+<table>
+  <tr><th>模組</th><th>類別 / 資源</th><th>職責說明</th></tr>
+  <tr><td>主控制台</td><td>MainActivity.kt</td><td>權限引導、鏡像預覽、視野微調</td></tr>
+  <tr><td>眼鏡渲染</td><td>XrealHudPresentation.kt</td><td>獨立渲染 1080p 極簡邊緣 HUD</td></tr>
+  <tr><td>外接監聽</td><td>DisplayAssistant.kt</td><td>監聽 DisplayManager 熱插拔</td></tr>
+  <tr><td>通知監聽</td><td>MapsNotificationListenerService.kt</td><td>攔截 Google Maps 導航通知</td></tr>
+  <tr><td>離線模擬</td><td>NavDemoSimulator.kt</td><td>提供 106 民族路情境離線演示</td></tr>
+</table>
+</body>
+</html>

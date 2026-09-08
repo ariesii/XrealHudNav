@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">XREAL 導航 HUD</string>
+    <string name="service_name">XREAL Maps 導航監聽服務</string>
+    <string name="glasses_connected">XREAL 眼鏡已連線 (HUD 投影中)</string>
+    <string name="glasses_disconnected">未偵測到 XREAL 眼鏡 (請透過 Type-C 連接)</string>
+    <string name="permission_granted">已獲得通知監聽授權</string>
+    <string name="permission_required">尚未開啟通知讀取權限 (點擊開啟)</string>
+    <string name="start_demo">啟動模擬導航展示</string>
+    <string name="stop_demo">停止模擬導航展示</string>
+    <string name="hud_preview_title">眼鏡端 HUD 即時預覽 (1080p 邊緣視角)</string>
+</resources>

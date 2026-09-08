@@ -1,0 +1,17 @@
+# XREAL Air 2 Pro 原生 Android 導航 HUD 與道路標示系統成果報告
+更新時間：2026-09-08 11:41:00
+
+一、成果亮點
+1. Micro-OLED 物理全透光設計（全黑 #000000，中央 75% 淨空留黑，完全不遮蔽前方視線）。
+2. Google Maps 即時通知監聽（透過 MapsNotificationListenerService 攔截路名、距離、轉彎箭頭，免付費 SDK）。
+3. 獨立雙螢幕投射（Android Presentation API，外接眼鏡插拔自動管理）。
+4. 手機端控制與即時鏡像預覽（提供 X/Y 微調與 Demo 模式）。
+
+二、專案架構與檔案清單
+- MainActivity.kt: 控制中心與鏡像預覽
+- XrealHudPresentation.kt: 眼鏡端 1080p 極簡全黑 HUD
+- DisplayAssistant.kt: 外接顯示器生命週期監聽
+- MapsNotificationListenerService.kt: Google Maps 導航通知解析
+- NavDemoSimulator.kt: 離線模擬器
+- presentation_xreal_hud.xml: 眼鏡端佈局
+- ic_arrow_*.xml: 高對比度轉向向量圖標

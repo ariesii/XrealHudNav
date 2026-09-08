@@ -1,0 +1,30 @@
+# XREAL Air 2 Pro 原生 Android 導航 HUD 與道路標示實作計畫
+建立時間：2026-09-08 11:38:00
+
+一、核心需求分析
+1. 裝置：XREAL Air 2 Pro（Type-C DP Alt Mode 第二螢幕輸出，雙眼 Micro-OLED）
+2. 核心功能：顯示轉向標示（Turn-by-turn Arrow）與道路標示（Road Name / Distance）
+3. 關鍵限制：在不影響畫面的情況下顯示（周邊視角 Glanceable HUD，不遮擋正前方行車視野）
+
+二、關鍵技術原理
+1. Micro-OLED 物理全透光原理：
+   - 背景強制為全黑 (#000000 / RGB 0,0,0)
+   - OLED 黑色像素關閉不發光，穿透率最高，肉眼視為完全透明
+   - 移除所有卡片式底色容器，僅浮現高對比符號與文字
+2. 視野配置（Peripheral HUD Layout）：
+   - 中央 75% 視野完全純黑無遮蔽
+   - 轉向箭頭與道路名稱放置於視野上方邊緣偏右
+3. 即時導航資料來源：
+   - 使用 Android 原生 NotificationListenerService 監聽 Google Maps 即時導航通知
+   - 免費、免 API Key，與 Google Maps 深度連動
+   - 內建 Demo 模擬模式
+4. 第二螢幕渲染：
+   - 使用 Android Presentation API 監聽 DisplayManager
+   - 自動適配 XREAL 眼鏡熱插拔
+
+三、專案模組架構
+- MainActivity: 控制台、權限引導、HUD 預覽與位置微調
+- XrealHudPresentation: 眼鏡端專用 Presentation 渲染視窗
+- MapsNotificationListenerService: 擷取 Google Maps 導航通知
+- MinimalHudView: 向量轉向圖標與道路標示渲染
+- NavInfo / ManeuverType: 導航資料模型

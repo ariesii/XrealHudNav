@@ -1,0 +1,17 @@
+<resources>
+    <style name="Theme.XrealHudNav" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/hud_accent_cyan</item>
+        <item name="android:statusBarColor">@color/black</item>
+    </style>
+
+    <!-- 眼鏡端專用全黑無邊框主題 -->
+    <style name="Theme.XrealHudNav.Presentation" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/hud_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowIsTranslucent">false</item>
+    </style>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基礎主題色彩 -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- XREAL Micro-OLED HUD 專用光學高對比配色 -->
+    <!-- 純黑色：OLED 像素關閉，光學完全透明，不遮蔽前方視線 -->
+    <color name="hud_background">#000000</color>
+    
+    <!-- 主要轉向標示高亮色（霓虹青綠色，穿透對比最佳） -->
+    <color name="hud_accent_cyan">#00E5FF</color>
+    
+    <!-- 次要提醒或特殊轉彎高亮色（琥珀黃） -->
+    <color name="hud_accent_amber">#FFB300</color>
+
+    <!-- 距離標示亮色（螢光嫩綠） -->
+    <color name="hud_accent_green">#00E676</color>
+    
+    <!-- 主要道路名稱文字色（冷白） -->
+    <color name="hud_text_primary">#FFFFFF</color>
+    
+    <!-- 次要道路名稱或說明（微透光淡藍灰） -->
+    <color name="hud_text_secondary">#90A4AE</color>
+
+    <!-- 狀態標籤背景（深邃微光） -->
+    <color name="hud_chip_bg">#1A00E5FF</color>
+</resources>
