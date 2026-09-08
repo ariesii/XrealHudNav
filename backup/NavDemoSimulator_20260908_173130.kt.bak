@@ -3,7 +3,6 @@ package com.xreal.hudnav.service
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
-import com.xreal.hudnav.model.PowerMode
 import com.xreal.hudnav.model.TrafficLightState
 import kotlinx.coroutines.*
 
@@ -14,7 +13,7 @@ object NavDemoSimulator {
         stopSimulation()
         simulationJob = scope.launch(Dispatchers.Default) {
             val demoSteps = listOf(
-                // 情境 1：高德截圖情境 -> 48m 民族路，2倍右轉箭頭，96sp 時速 35 km/h，紅燈等待 🔴 24s，電池 85%
+                // 情境 1：使用者高德截圖原貌 -> 48m 民族路，右轉，紅燈 24 秒等待！
                 NavInfo(
                     maneuver = ManeuverType.TURN_RIGHT,
                     distance = "48m",
@@ -31,40 +30,34 @@ object NavDemoSimulator {
                     cameraDistance = null,
                     trafficLightState = TrafficLightState.RED,
                     trafficLightSeconds = 24,
-                    batteryLevel = 85,
-                    isCharging = false,
-                    powerMode = NavStateRepository.currentPowerMode.value,
                     mapSource = "高德地圖",
                     isNavigating = true
                 ),
-                // 情境 2：紅燈秒數倒數至 5 秒，時速減至 15 km/h
+                // 情境 2：紅綠燈秒數倒數至 5 秒
                 NavInfo(
                     maneuver = ManeuverType.TURN_RIGHT,
-                    distance = "25m",
-                    distanceMeters = 25,
+                    distance = "30m",
+                    distanceMeters = 30,
                     roadNumber = null,
                     roadName = "民族路",
                     nextAction = "請注意觀察周邊環境，謹慎駕駛",
                     remainingTime = "28 分鐘",
                     remainingDistance = "10.6 公里",
                     eta = "下午 3:19",
-                    currentSpeed = 15,
+                    currentSpeed = 20,
                     speedLimit = 50,
                     cameraWarning = null,
                     cameraDistance = null,
                     trafficLightState = TrafficLightState.RED,
                     trafficLightSeconds = 5,
-                    batteryLevel = 85,
-                    isCharging = false,
-                    powerMode = NavStateRepository.currentPowerMode.value,
                     mapSource = "高德地圖",
                     isNavigating = true
                 ),
-                // 情境 3：綠燈通行 🟢 18s，開始右轉
+                // 情境 3：號誌轉為綠燈！綠燈剩餘 18s，開始右轉
                 NavInfo(
                     maneuver = ManeuverType.TURN_RIGHT,
                     distance = "即將右轉",
-                    distanceMeters = 8,
+                    distanceMeters = 10,
                     roadNumber = null,
                     roadName = "民族路",
                     nextAction = "右轉進入 民族路",
@@ -77,20 +70,17 @@ object NavDemoSimulator {
                     cameraDistance = null,
                     trafficLightState = TrafficLightState.GREEN,
                     trafficLightSeconds = 18,
-                    batteryLevel = 84,
-                    isCharging = false,
-                    powerMode = NavStateRepository.currentPowerMode.value,
                     mapSource = "高德地圖",
                     isNavigating = true
                 ),
-                // 情境 4：直線加速至 56 km/h（96sp 震撼超速黃色警示！），測速相機 [📷 50] 280m 提醒
+                // 情境 4：進入民族路順暢行駛，時速加速至 56 km/h（展示放大時速與超速警示黃色），前方測速相機 [📷 50] 280m 出現！
                 NavInfo(
                     maneuver = ManeuverType.STRAIGHT,
-                    distance = "650 公尺",
-                    distanceMeters = 650,
+                    distance = "600 公尺",
+                    distanceMeters = 600,
                     roadNumber = "106",
                     roadName = "民族路",
-                    nextAction = "接續直行 縣民大道",
+                    nextAction = "接下來 ↰ 106縣道",
                     remainingTime = "25 分鐘",
                     remainingDistance = "10.1 公里",
                     eta = "下午 3:19",
@@ -100,13 +90,10 @@ object NavDemoSimulator {
                     cameraDistance = 280,
                     trafficLightState = TrafficLightState.NONE,
                     trafficLightSeconds = null,
-                    batteryLevel = 84,
-                    isCharging = true, // 插上車充
-                    powerMode = NavStateRepository.currentPowerMode.value,
                     mapSource = "Google Maps",
                     isNavigating = true
                 ),
-                // 情境 5：長途直行 1.2 公里 -> 觸發 Smart Glance 自動平滑淡出極致淨空
+                // 情境 5：長途直行 -> 觸發 Smart Glance 自動淡出極致淨空
                 NavInfo(
                     maneuver = ManeuverType.STRAIGHT,
                     distance = "1.2 公里",
@@ -123,9 +110,6 @@ object NavDemoSimulator {
                     cameraDistance = null,
                     trafficLightState = TrafficLightState.NONE,
                     trafficLightSeconds = null,
-                    batteryLevel = 84,
-                    isCharging = true,
-                    powerMode = NavStateRepository.currentPowerMode.value,
                     mapSource = "Google Maps",
                     isNavigating = true
                 )

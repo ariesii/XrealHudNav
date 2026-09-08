@@ -5,7 +5,6 @@ import android.animation.ValueAnimator
 import android.app.Presentation
 import android.content.Context
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.view.Display
 import android.view.View
@@ -19,7 +18,6 @@ import com.xreal.hudnav.R
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
-import com.xreal.hudnav.model.PowerMode
 import com.xreal.hudnav.model.TrafficLightState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -33,6 +31,7 @@ class XrealHudPresentation(
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
+    // UI 元件
     private lateinit var hudContainer: LinearLayout
     private lateinit var ivManeuver: ImageView
     private lateinit var tvDistance: TextView
@@ -44,13 +43,7 @@ class XrealHudPresentation(
     private lateinit var tvTripSummary: TextView
     private lateinit var tvStandbyHint: TextView
 
-    // 頂部系統狀態列 (電池電量與省電模式)
-    private lateinit var layoutSystemStatus: LinearLayout
-    private lateinit var tvBatteryIcon: TextView
-    private lateinit var tvBatteryLevel: TextView
-    private lateinit var tvPowerModeTag: TextView
-
-    // 右上角超大時速、測速與紅綠燈
+    // 時速、測速與紅綠燈
     private lateinit var layoutSpeedometer: LinearLayout
     private lateinit var tvSpeedValue: TextView
     private lateinit var tvSpeedUnit: TextView
@@ -59,13 +52,13 @@ class XrealHudPresentation(
     private lateinit var tvCameraDistance: TextView
     private lateinit var tvMapSourceTag: TextView
 
-    // 紅綠燈倒數
+    // 紅綠燈秒數倒數膠囊
     private lateinit var layoutTrafficLight: LinearLayout
     private lateinit var viewTrafficLightDot: View
     private lateinit var tvTrafficLightSeconds: TextView
     private lateinit var tvTrafficLightLabel: TextView
 
-    // 倒數進度光條
+    // 距離倒數進度光條
     private lateinit var layoutProgressTrack: View
     private lateinit var viewProgressBar: View
 
@@ -75,13 +68,9 @@ class XrealHudPresentation(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 設定多重防鎖屏穿透 flags，徹底防止手機按電源鍵時鎖屏時鐘遮擋眼鏡
         window?.apply {
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
-            addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
-            addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-            addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
             setBackgroundDrawableResource(R.color.hud_background)
         }
 
@@ -104,11 +93,6 @@ class XrealHudPresentation(
         tvTripSummary = findViewById(R.id.tvTripSummary)
         tvStandbyHint = findViewById(R.id.tvStandbyHint)
 
-        layoutSystemStatus = findViewById(R.id.layoutSystemStatus)
-        tvBatteryIcon = findViewById(R.id.tvBatteryIcon)
-        tvBatteryLevel = findViewById(R.id.tvBatteryLevel)
-        tvPowerModeTag = findViewById(R.id.tvPowerModeTag)
-
         layoutSpeedometer = findViewById(R.id.layoutSpeedometer)
         tvSpeedValue = findViewById(R.id.tvSpeedValue)
         tvSpeedUnit = findViewById(R.id.tvSpeedUnit)
@@ -127,7 +111,7 @@ class XrealHudPresentation(
     }
 
     private fun setupFlowAnimation() {
-        arrowFlowAnimator = ValueAnimator.ofFloat(1.0f, 0.45f, 1.0f).apply {
+        arrowFlowAnimator = ValueAnimator.ofFloat(1.0f, 0.4f, 1.0f).apply {
             duration = 1000
             repeatCount = ValueAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
@@ -172,7 +156,6 @@ class XrealHudPresentation(
         if (!info.isNavigating) {
             hudContainer.visibility = View.GONE
             layoutSpeedometer.visibility = View.GONE
-            layoutSystemStatus.visibility = View.GONE
             tvStandbyHint.visibility = View.VISIBLE
             arrowFlowAnimator?.cancel()
             ivManeuver.alpha = 1.0f
@@ -181,12 +164,8 @@ class XrealHudPresentation(
 
         tvStandbyHint.visibility = View.GONE
         layoutSpeedometer.visibility = if (NavStateRepository.isSpeedometerEnabled.value) View.VISIBLE else View.GONE
-        layoutSystemStatus.visibility = View.VISIBLE
 
-        // 1. 渲染頂部電池電量與省電模式
-        renderBatteryAndPowerMode(info)
-
-        // 2. 96sp 震撼大時速與超速警示
+        // 1. 放大後的車速與超速顏色
         tvSpeedValue.text = info.currentSpeed.toString()
         if (info.isSpeeding()) {
             tvSpeedValue.setTextColor(ContextCompat.getColor(context, R.color.hud_accent_amber))
@@ -194,12 +173,13 @@ class XrealHudPresentation(
             tvSpeedValue.setTextColor(ContextCompat.getColor(context, R.color.hud_accent_cyan))
         }
 
-        // 3. 智慧紅綠燈秒數倒數膠囊
+        // 2. 智慧紅綠燈秒數倒數膠囊
         if (info.hasTrafficLight()) {
             layoutTrafficLight.visibility = View.VISIBLE
             tvTrafficLightSeconds.text = "${info.trafficLightSeconds}s"
             val color = Color.parseColor(info.trafficLightState.colorHex)
             tvTrafficLightSeconds.setTextColor(color)
+            viewTrafficLightDot.backgroundTintList = ContextCompat.getColorStateList(context, android.R.color.white)
             viewTrafficLightDot.background.setTint(color)
             tvTrafficLightLabel.text = when (info.trafficLightState) {
                 TrafficLightState.RED -> "紅燈等待"
@@ -211,7 +191,7 @@ class XrealHudPresentation(
             layoutTrafficLight.visibility = View.GONE
         }
 
-        // 4. 測速照相
+        // 3. 測速照相提醒
         if (!info.cameraWarning.isNullOrBlank()) {
             tvCameraTag.text = info.cameraWarning
             tvCameraDistance.text = "${info.cameraDistance ?: 0}m"
@@ -224,12 +204,10 @@ class XrealHudPresentation(
 
         handleSmartGlance(info)
 
-        // 5. 2 倍大指標圖示與動態流光（若在極限省電模式下停用動畫以省電）
+        // 4. 轉向向量圖標與動態呼吸流光
         ivManeuver.setImageResource(info.maneuver.iconResId)
         val isTurnManeuver = info.maneuver != ManeuverType.STRAIGHT && info.maneuver != ManeuverType.DESTINATION
-        val canAnimate = info.powerMode != PowerMode.ULTRA_ECO
-
-        if (isTurnManeuver && info.distanceMeters <= 350 && canAnimate) {
+        if (isTurnManeuver && info.distanceMeters <= 350) {
             if (arrowFlowAnimator?.isRunning != true) {
                 arrowFlowAnimator?.start()
             }
@@ -238,7 +216,7 @@ class XrealHudPresentation(
             ivManeuver.alpha = 1.0f
         }
 
-        // 6. 2 倍大距離與路名
+        // 5. 轉向距離與路名
         tvDistance.text = info.distance
         if (!info.roadNumber.isNullOrBlank()) {
             tvRoadNumber.text = info.roadNumber
@@ -248,10 +226,10 @@ class XrealHudPresentation(
         }
         tvRoadName.text = info.roadName
 
-        // 7. 倒數進度光條
+        // 6. 距離倒數進度光條
         updateProgressBar(info.distanceMeters)
 
-        // 8. 接下來動作與行程進度
+        // 7. 接下來動作與行程進度
         if (!info.nextAction.isNullOrBlank()) {
             tvNextAction.text = info.nextAction
             layoutNextAction.visibility = View.VISIBLE
@@ -272,21 +250,6 @@ class XrealHudPresentation(
         }
     }
 
-    private fun renderBatteryAndPowerMode(info: NavInfo) {
-        tvBatteryIcon.text = if (info.isCharging) "⚡" else if (info.batteryLevel < 20) "🪫" else "🔋"
-        tvBatteryLevel.text = "${info.batteryLevel}%"
-
-        val batteryColor = when {
-            info.isCharging -> Color.parseColor("#FFD600")
-            info.batteryLevel < 20 -> Color.parseColor("#FF5252")
-            info.batteryLevel < 50 -> Color.parseColor("#FFB300")
-            else -> Color.parseColor("#00E5FF")
-        }
-        tvBatteryLevel.setTextColor(batteryColor)
-
-        tvPowerModeTag.text = info.powerMode.label
-    }
-
     private fun handleSmartGlance(info: NavInfo) {
         val smartGlanceOn = NavStateRepository.isSmartGlanceEnabled.value
         val threshold = NavStateRepository.smartGlanceThreshold.value
@@ -297,7 +260,7 @@ class XrealHudPresentation(
             val shouldHide = info.maneuver == ManeuverType.STRAIGHT && info.distanceMeters > threshold
             if (shouldHide && !isGlanceHidden) {
                 isGlanceHidden = true
-                ObjectAnimator.ofFloat(hudContainer, "alpha", hudContainer.alpha, 0.12f).apply {
+                ObjectAnimator.ofFloat(hudContainer, "alpha", hudContainer.alpha, 0.15f).apply {
                     duration = 500
                     start()
                 }

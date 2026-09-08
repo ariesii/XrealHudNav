@@ -1,38 +1,28 @@
 package com.xreal.hudnav
 
 import android.Manifest
-import android.content.BroadcastReceiver
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.os.BatteryManager
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.Display
-import android.view.GestureDetector
-import android.view.MotionEvent
 import android.view.View
-import android.view.WindowManager
 import android.widget.Button
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.slider.Slider
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
 import com.xreal.hudnav.model.NavStateRepository
-import com.xreal.hudnav.model.PowerMode
 import com.xreal.hudnav.model.TrafficLightState
 import com.xreal.hudnav.presentation.DisplayAssistant
 import com.xreal.hudnav.service.NavDemoSimulator
@@ -49,17 +39,14 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
 
     private lateinit var indicatorGlasses: View
     private lateinit var tvGlassesStatus: TextView
-    private lateinit var tvBatteryStatus: TextView
+    private lateinit var tvPermissionStatus: TextView
     private lateinit var btnGrantPermission: Button
+    private lateinit var tvGpsPermissionStatus: TextView
     private lateinit var btnGrantGps: Button
     private lateinit var btnToggleDemo: Button
-    private lateinit var btnEnterBlackout: Button
-    private lateinit var layoutBlackoutOverlay: FrameLayout
 
-    private lateinit var rgPowerMode: RadioGroup
-    private lateinit var rbNormal: RadioButton
-    private lateinit var rbEco: RadioButton
-    private lateinit var rbUltraEco: RadioButton
+    private lateinit var switchSmartGlance: SwitchMaterial
+    private lateinit var switchSpeedometer: SwitchMaterial
 
     // 鏡像預覽元件
     private lateinit var previewHudContainer: LinearLayout
@@ -81,17 +68,19 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var previewLayoutProgressTrack: View
     private lateinit var previewViewProgressBar: View
 
-    private lateinit var previewLayoutSystemStatus: LinearLayout
-    private lateinit var previewTvBatteryIcon: TextView
-    private lateinit var previewTvBatteryLevel: TextView
-    private lateinit var previewTvPowerModeTag: TextView
-
+    // 預覽紅綠燈元件
     private lateinit var previewLayoutTrafficLight: LinearLayout
     private lateinit var previewViewTrafficLightDot: View
     private lateinit var previewTvTrafficLightSeconds: TextView
     private lateinit var previewTvTrafficLightLabel: TextView
 
-    private var batteryReceiver: BroadcastReceiver? = null
+    private lateinit var sliderOffsetX: Slider
+    private lateinit var sliderOffsetY: Slider
+    private lateinit var sliderScale: Slider
+    private lateinit var tvOffsetXLabel: TextView
+    private lateinit var tvOffsetYLabel: TextView
+    private lateinit var tvScaleLabel: TextView
+    private lateinit var btnResetOffset: Button
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -106,18 +95,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 啟用鎖屏穿透設定，保證螢幕鎖定時外接眼鏡不被鎖屏時鐘覆蓋
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        }
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-        )
-
         setContentView(R.layout.activity_main)
 
         gpsSpeedManager = GpsSpeedManager(this)
@@ -125,7 +102,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         initViews()
         setupListeners()
         setupDisplayAssistant()
-        setupBatteryMonitoring()
         observeNavState()
     }
 
@@ -140,25 +116,19 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         displayAssistant.stopListening()
         gpsSpeedManager.stopTracking()
         NavDemoSimulator.stopSimulation()
-        batteryReceiver?.let {
-            try { unregisterReceiver(it) } catch (_: Exception) {}
-        }
     }
 
     private fun initViews() {
         indicatorGlasses = findViewById(R.id.indicatorGlasses)
         tvGlassesStatus = findViewById(R.id.tvGlassesStatus)
-        tvBatteryStatus = findViewById(R.id.tvBatteryStatus)
+        tvPermissionStatus = findViewById(R.id.tvPermissionStatus)
         btnGrantPermission = findViewById(R.id.btnGrantPermission)
+        tvGpsPermissionStatus = findViewById(R.id.tvGpsPermissionStatus)
         btnGrantGps = findViewById(R.id.btnGrantGps)
         btnToggleDemo = findViewById(R.id.btnToggleDemo)
-        btnEnterBlackout = findViewById(R.id.btnEnterBlackout)
-        layoutBlackoutOverlay = findViewById(R.id.layoutBlackoutOverlay)
 
-        rgPowerMode = findViewById(R.id.rgPowerMode)
-        rbNormal = findViewById(R.id.rbNormal)
-        rbEco = findViewById(R.id.rbEco)
-        rbUltraEco = findViewById(R.id.rbUltraEco)
+        switchSmartGlance = findViewById(R.id.switchSmartGlance)
+        switchSpeedometer = findViewById(R.id.switchSpeedometer)
 
         val previewView = findViewById<View>(R.id.hudPreviewContent)
         previewHudContainer = previewView.findViewById(R.id.hudContainer)
@@ -171,11 +141,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewLayoutTripSummary = previewView.findViewById(R.id.layoutTripSummary)
         previewTvTripSummary = previewView.findViewById(R.id.tvTripSummary)
         previewTvStandbyHint = previewView.findViewById(R.id.tvStandbyHint)
-
-        previewLayoutSystemStatus = previewView.findViewById(R.id.layoutSystemStatus)
-        previewTvBatteryIcon = previewView.findViewById(R.id.tvBatteryIcon)
-        previewTvBatteryLevel = previewView.findViewById(R.id.tvBatteryLevel)
-        previewTvPowerModeTag = previewView.findViewById(R.id.tvPowerModeTag)
 
         previewLayoutSpeedometer = previewView.findViewById(R.id.layoutSpeedometer)
         previewTvSpeedValue = previewView.findViewById(R.id.tvSpeedValue)
@@ -190,6 +155,14 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewViewTrafficLightDot = previewView.findViewById(R.id.viewTrafficLightDot)
         previewTvTrafficLightSeconds = previewView.findViewById(R.id.tvTrafficLightSeconds)
         previewTvTrafficLightLabel = previewView.findViewById(R.id.tvTrafficLightLabel)
+
+        sliderOffsetX = findViewById(R.id.sliderOffsetX)
+        sliderOffsetY = findViewById(R.id.sliderOffsetY)
+        sliderScale = findViewById(R.id.sliderScale)
+        tvOffsetXLabel = findViewById(R.id.tvOffsetXLabel)
+        tvOffsetYLabel = findViewById(R.id.tvOffsetYLabel)
+        tvScaleLabel = findViewById(R.id.tvScaleLabel)
+        btnResetOffset = findViewById(R.id.btnResetOffset)
     }
 
     private fun setupListeners() {
@@ -206,30 +179,12 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             )
         }
 
-        // 黑屏純省電防誤觸模式 (雙擊螢幕喚醒)
-        btnEnterBlackout.setOnClickListener {
-            layoutBlackoutOverlay.visibility = View.VISIBLE
+        switchSmartGlance.setOnCheckedChangeListener { _, isChecked ->
+            NavStateRepository.setSmartGlance(isChecked)
         }
 
-        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent): Boolean {
-                layoutBlackoutOverlay.visibility = View.GONE
-                return true
-            }
-        })
-        layoutBlackoutOverlay.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            true
-        }
-
-        // 省電模型切換
-        rgPowerMode.setOnCheckedChangeListener { _, checkedId ->
-            val mode = when (checkedId) {
-                R.id.rbEco -> PowerMode.ECO
-                R.id.rbUltraEco -> PowerMode.ULTRA_ECO
-                else -> PowerMode.NORMAL
-            }
-            NavStateRepository.setPowerMode(mode)
+        switchSpeedometer.setOnCheckedChangeListener { _, isChecked ->
+            NavStateRepository.setSpeedometerEnabled(isChecked)
         }
 
         btnToggleDemo.setOnClickListener {
@@ -243,28 +198,27 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 btnToggleDemo.setBackgroundColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
             }
         }
-    }
 
-    private fun setupBatteryMonitoring() {
-        batteryReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Intent.ACTION_BATTERY_CHANGED) {
-                    val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                    val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                    val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                    val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                            status == BatteryManager.BATTERY_STATUS_FULL
-
-                    if (level >= 0 && scale > 0) {
-                        val pct = (level * 100 / scale.toFloat()).toInt()
-                        NavStateRepository.updateBattery(pct, isCharging)
-                        val icon = if (isCharging) "⚡" else "🔋"
-                        tvBatteryStatus.text = "手機電量: $icon $pct%"
-                    }
-                }
-            }
+        val updateOffset = {
+            val x = sliderOffsetX.value
+            val y = sliderOffsetY.value
+            val scale = sliderScale.value
+            tvOffsetXLabel.text = "水平位置微調 (X Offset): ${x.toInt()} px"
+            tvOffsetYLabel.text = "垂直高度微調 (Y Offset): ${y.toInt()} px"
+            tvScaleLabel.text = "縮放比例 (Scale): ${String.format("%.2f", scale)}x"
+            NavStateRepository.updateHudOffset(x, y, scale)
         }
-        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+
+        sliderOffsetX.addOnChangeListener { _, _, _ -> updateOffset() }
+        sliderOffsetY.addOnChangeListener { _, _, _ -> updateOffset() }
+        sliderScale.addOnChangeListener { _, _, _ -> updateOffset() }
+
+        btnResetOffset.setOnClickListener {
+            sliderOffsetX.value = 0f
+            sliderOffsetY.value = 0f
+            sliderScale.value = 1.0f
+            updateOffset()
+        }
     }
 
     private fun setupDisplayAssistant() {
@@ -275,8 +229,12 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private fun checkNotificationPermission() {
         val enabled = isNotificationServiceEnabled()
         if (enabled) {
+            tvPermissionStatus.setText(R.string.permission_granted)
+            tvPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_green))
             btnGrantPermission.visibility = View.GONE
         } else {
+            tvPermissionStatus.setText(R.string.permission_required)
+            tvPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
             btnGrantPermission.visibility = View.VISIBLE
         }
     }
@@ -285,9 +243,13 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
         val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            tvGpsPermissionStatus.text = "GPS 車速與測速相機：已授權啟用"
+            tvGpsPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_green))
             btnGrantGps.visibility = View.GONE
             gpsSpeedManager.startTracking()
         } else {
+            tvGpsPermissionStatus.text = "GPS 車速與測速相機：未取得定位權限"
+            tvGpsPermissionStatus.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
             btnGrantGps.visibility = View.VISIBLE
         }
     }
@@ -313,28 +275,44 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 renderPreview(info)
             }
         }
+
+        lifecycleScope.launch {
+            NavStateRepository.isSpeedometerEnabled.collectLatest { enabled ->
+                previewLayoutSpeedometer.visibility = if (enabled) View.VISIBLE else View.GONE
+            }
+        }
+
+        lifecycleScope.launch {
+            NavStateRepository.hudOffsetX.collectLatest { x ->
+                previewHudContainer.translationX = x * 0.4f
+            }
+        }
+        lifecycleScope.launch {
+            NavStateRepository.hudOffsetY.collectLatest { y ->
+                previewHudContainer.translationY = y * 0.4f
+            }
+        }
+        lifecycleScope.launch {
+            NavStateRepository.hudScale.collectLatest { scale ->
+                previewHudContainer.scaleX = scale
+                previewHudContainer.scaleY = scale
+            }
+        }
     }
 
     private fun renderPreview(info: NavInfo) {
         if (!info.isNavigating) {
             previewHudContainer.visibility = View.GONE
             previewLayoutSpeedometer.visibility = View.GONE
-            previewLayoutSystemStatus.visibility = View.GONE
             previewTvStandbyHint.visibility = View.VISIBLE
             return
         }
 
         previewTvStandbyHint.visibility = View.GONE
         previewHudContainer.visibility = View.VISIBLE
-        previewLayoutSpeedometer.visibility = View.VISIBLE
-        previewLayoutSystemStatus.visibility = View.VISIBLE
+        previewLayoutSpeedometer.visibility = if (NavStateRepository.isSpeedometerEnabled.value) View.VISIBLE else View.GONE
 
-        // 頂部電池電量與省電標籤
-        previewTvBatteryIcon.text = if (info.isCharging) "⚡" else "🔋"
-        previewTvBatteryLevel.text = "${info.batteryLevel}%"
-        previewTvPowerModeTag.text = info.powerMode.label
-
-        // 96sp 放大時速
+        // 放大時速
         previewTvSpeedValue.text = info.currentSpeed.toString()
         if (info.isSpeeding()) {
             previewTvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
@@ -342,7 +320,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             previewTvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_cyan))
         }
 
-        // 紅綠燈倒數
+        // 紅綠燈膠囊
         if (info.hasTrafficLight()) {
             previewLayoutTrafficLight.visibility = View.VISIBLE
             previewTvTrafficLightSeconds.text = "${info.trafficLightSeconds}s"
@@ -369,7 +347,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
 
         previewTvMapSourceTag.text = info.mapSource
 
-        // 2倍大指標與路名
         previewIvManeuver.setImageResource(info.maneuver.iconResId)
         previewTvDistance.text = info.distance
 

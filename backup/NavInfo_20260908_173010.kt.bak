@@ -11,15 +11,6 @@ enum class TrafficLightState(val label: String, val colorHex: String) {
 }
 
 /**
- * HUD 省電模型列舉
- */
-enum class PowerMode(val label: String, val description: String) {
-    NORMAL("標準模式", "完整 60fps 動態流光、GPS 高頻即時刷新"),
-    ECO("智慧省電", "長途直行自動全黑休眠，路口自動喚醒節能"),
-    ULTRA_ECO("極致續航", "純靜態超大字體，關閉所有動態，最長續航")
-}
-
-/**
  * 導航即時資訊資料結構
  */
 data class NavInfo(
@@ -38,15 +29,22 @@ data class NavInfo(
     val cameraDistance: Int? = null,
     val trafficLightState: TrafficLightState = TrafficLightState.NONE,
     val trafficLightSeconds: Int? = null,
-    val batteryLevel: Int = 85,
-    val isCharging: Boolean = false,
-    val powerMode: PowerMode = PowerMode.NORMAL,
     val mapSource: String = "Google Maps",
     val isNavigating: Boolean = false
 ) {
+    /**
+     * 是否處於超速狀態
+     */
     fun isSpeeding(): Boolean = currentSpeed > speedLimit && speedLimit > 0
+
+    /**
+     * 是否有紅綠燈倒數資訊
+     */
     fun hasTrafficLight(): Boolean = trafficLightState != TrafficLightState.NONE && trafficLightSeconds != null && trafficLightSeconds > 0
 
+    /**
+     * 組合道路標示顯示字串
+     */
     fun getFullRoadDisplay(): String {
         return if (!roadNumber.isNullOrBlank()) {
             "[$roadNumber] $roadName"
