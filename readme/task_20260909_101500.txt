@@ -1,0 +1,16 @@
+任務說明 (Task): 高德地圖 16 導航路口、轉向資訊與車載廣播雙通道支援
+時間: 2026-09-09 10:15:00
+
+【核心問題診斷】
+1. 使用者回報高德地圖已升級至 16 版，仍然抓不到路口資訊與轉向。
+2. 使用者所貼的「聲明定位 service 與 AMapNavi SDK 文檔」屬於「內嵌高德地圖 SDK」開發專案，需申請高德 Key，而非監聽使用者手機上的高德地圖 App。
+3. 高德地圖 16 版在 Android 11+ 上遭遇 Package Visibility 阻擋，必須在 AndroidManifest.xml 加入 <queries> 標籤宣告 com.autonavi.minimap。
+4. RemoteViews 實體化時未傳入高德套件之 PackageContext，引發 ResourcesNotFoundException。
+5. 高德地圖官方提供最穩定之車載標準導航廣播 (AUTONAVI_STANDARD_BROADCAST_SEND)，可直接獲取精確至公尺之距離、路名、轉向、車速、車道線與紅綠燈狀態。
+
+【執行工作清單】
+- [x] AndroidManifest.xml 加入 <queries> 套件可見性宣告與 AmapBroadcastReceiver 廣播接收器。
+- [x] 建立 AmapBroadcastReceiver.kt 接收高德車載標準廣播 (AUTONAVI_STANDARD_BROADCAST_SEND，KEY_TYPE=10001/10019/10002)。
+- [x] MapsNotificationListenerService 升級使用 createPackageContext 解析 RemoteViews，並在偵測到高德地圖時主動發送握手廣播 (KEY_TYPE=10013)。
+- [x] MainActivity 加入手動廣播握手按鈕 (btnPingAmap) 與 onResume 自動喚醒高德廣播連線。
+- [x] 完整保存修改前歷史備份至 backup/ 目錄。

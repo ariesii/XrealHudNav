@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var btnGrantOverlay: Button
     private lateinit var btnToggleDemo: Button
     private lateinit var btnEnterBlackout: Button
-    private lateinit var btnPingAmap: Button
     private lateinit var layoutBlackoutOverlay: FrameLayout
     private lateinit var tvNotificationLog: TextView
 
@@ -143,8 +142,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         checkNotificationPermission()
         checkGpsPermission()
         checkOverlayPermission()
-        // 主動向高德地圖發送車載標準廣播請求 (KEY_TYPE=10013)
-        com.xreal.hudnav.receiver.AmapBroadcastReceiver.requestAmapBroadcast(this)
     }
 
     override fun onDestroy() {
@@ -166,7 +163,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         btnGrantOverlay = findViewById(R.id.btnGrantOverlay)
         btnToggleDemo = findViewById(R.id.btnToggleDemo)
         btnEnterBlackout = findViewById(R.id.btnEnterBlackout)
-        btnPingAmap = findViewById(R.id.btnPingAmap)
         layoutBlackoutOverlay = findViewById(R.id.layoutBlackoutOverlay)
         tvNotificationLog = findViewById(R.id.tvNotificationLog)
 
@@ -235,12 +231,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 )
                 startActivity(intent)
             }
-        }
-
-        // 測試發送高德車載標準廣播握手請求
-        btnPingAmap.setOnClickListener {
-            com.xreal.hudnav.receiver.AmapBroadcastReceiver.requestAmapBroadcast(this)
-            android.widget.Toast.makeText(this, "已發送高德車載廣播連線請求", android.widget.Toast.LENGTH_SHORT).show()
         }
 
         // 黑屏純省電防誤觸模式 (降低螢幕亮度至 0.01f，雙擊螢幕喚醒)

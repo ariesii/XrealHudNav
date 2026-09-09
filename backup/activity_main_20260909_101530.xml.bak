@@ -156,33 +156,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="4dp"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="顯示手機捕獲到的地圖通知與車載廣播，確保高德地圖資料正常流入"
-                            android:textColor="#90A4AE"
-                            android:textSize="12sp" />
-
-                        <Button
-                            android:id="@+id/btnPingAmap"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="36dp"
-                            android:paddingLeft="8dp"
-                            android:paddingRight="8dp"
-                            android:text="廣播握手"
-                            android:textSize="12sp"
-                            android:textColor="#00E5FF"
-                            app:strokeColor="#00E5FF" />
-                    </LinearLayout>
+                        android:layout_marginTop="2dp"
+                        android:text="顯示手機捕獲到的地圖通知與廣播封包，確保高德地圖資料正常流入"
+                        android:textColor="#90A4AE"
+                        android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/tvNotificationLog"

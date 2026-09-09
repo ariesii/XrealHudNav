@@ -141,7 +141,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
         val ticker = notification.tickerText?.toString().orEmpty()
 
         // 深度提取：掃描 RemoteViews (contentView, bigContentView, headsUpContentView) 與 Extras 所有字串
-        val remoteViewData = extractRemoteViewsData(notification, sbn.packageName)
+        val remoteViewData = extractRemoteViewsData(notification)
         val allExtractedTexts = mutableListOf<String>()
 
         // 收集 Extras 內部所有文字
@@ -161,16 +161,10 @@ class MapsNotificationListenerService : NotificationListenerService() {
             it.isNotBlank() && it != "高德地圖" && it != "正在導航" && it != "導航中"
         }
 
-        // 若為高德地圖，主動發送車載標準廣播握手請求，雙管齊下獲取原生結構化數據
-        if (sbn.packageName.contains("autonavi")) {
-            com.xreal.hudnav.receiver.AmapBroadcastReceiver.requestAmapBroadcast(this)
-        }
-
         val logEntry = if (distinctTexts.isNotEmpty()) {
             "[$mapSourceName] 抓取: " + distinctTexts.joinToString(" | ")
         } else {
-            val keysDump = extras.keySet().joinToString(",")
-            "[$mapSourceName] $title | $text (無內文, extras鍵: $keysDump)"
+            "[$mapSourceName] $title | $text"
         }
         Log.d(TAG, logEntry)
         NavStateRepository.appendNotificationLog(logEntry)
@@ -197,7 +191,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
         val firstBitmap: Bitmap?
     )
 
-    private fun extractRemoteViewsData(notification: Notification, targetPackage: String): RemoteViewExtractResult {
+    private fun extractRemoteViewsData(notification: Notification): RemoteViewExtractResult {
         val texts = mutableListOf<String>()
         var foundBitmap: Bitmap? = null
 
@@ -207,22 +201,15 @@ class MapsNotificationListenerService : NotificationListenerService() {
             notification.headsUpContentView
         )
 
-        // 關鍵：使用目標套件 Context 載入資源，避免跨進程 ResourceNotFoundException
-        val packageCtx = try {
-            createPackageContext(targetPackage, Context.CONTEXT_RESTRICTED or Context.CONTEXT_IGNORE_SECURITY)
-        } catch (_: Exception) {
-            applicationContext
-        }
-
         for (rv in rvs) {
             try {
-                val dummyParent = android.widget.FrameLayout(packageCtx)
-                val inflated = rv.apply(packageCtx, dummyParent)
+                val dummyParent = android.widget.FrameLayout(applicationContext)
+                val inflated = rv.apply(applicationContext, dummyParent)
                 extractViewsRecursive(inflated, texts) { bmp ->
                     if (foundBitmap == null) foundBitmap = bmp
                 }
             } catch (e: Exception) {
-                // 若 apply 失敗，降級為反射讀取 Action
+                // 若 apply 失敗，反射讀取 Action
                 extractViaReflection(rv, texts)
             }
         }

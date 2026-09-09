@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>高德地圖 16 導航整合任務說明</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #121212; color: #E0E0E0; padding: 24px; }
+        h1 { color: #00E5FF; }
+        .card { background: #1E1E1E; border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #00E5FF; }
+        ul { line-height: 1.8; }
+        code { background: #2A2A2A; color: #FFD54F; padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>高德地圖 16 導航路口、轉向資訊與車載廣播雙通道整合</h1>
+    <div class="card">
+        <h3>核心問題與技術突破</h3>
+        <ul>
+            <li><b>高德 SDK vs 手機高德地圖 App：</b>使用者引用之 AMapNavi 需高德 Key 且屬於自行開發地圖，HUD 外接眼鏡則需對接使用者手機上安裝之官方高德地圖 App。</li>
+            <li><b>Android 11+ 套件可見性：</b>加入 <code>&lt;queries&gt;</code> 標籤以解除 Android 系統對高德地圖的讀取限制。</li>
+            <li><b>高德車載標準廣播：</b>支援 <code>AUTONAVI_STANDARD_BROADCAST_SEND</code>，直接獲取精確距離、路名、轉向、車道線與紅綠燈狀態。</li>
+            <li><b>RemoteViews 資源載入修復：</b>改用 <code>createPackageContext</code> 載入高德地圖 XML 資源，杜絕崩潰問題。</li>
+        </ul>
+    </div>
+</body>
+</html>

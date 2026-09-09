@@ -1,0 +1,16 @@
+完成進度總結 (Walkthrough): 高德地圖 16 雙通道深度整合與車載標準廣播支援
+時間: 2026-09-09 10:15:00
+
+【完成之代碼與設定】
+1. AndroidManifest.xml:
+   - 增加 <queries> 宣告 (com.autonavi.minimap, com.autonavi.amapauto, com.google.android.apps.maps)。
+   - 註冊 AmapBroadcastReceiver 監聽 AUTONAVI_STANDARD_BROADCAST_SEND。
+2. AmapBroadcastReceiver.kt:
+   - 實作高德車載廣播協定，解析 KEY_TYPE=10001 (路名、剩餘距離、轉向 ICON、車速、車道線)、KEY_TYPE=10019 (紅綠燈狀態與秒數倒數)。
+   - 提供 requestAmapBroadcast 主動向高德發送 KEY_TYPE=10013 握手連線。
+3. MapsNotificationListenerService.kt:
+   - RemoteViews 解析採用 createPackageContext，避免 cross-app resource not found 例外。
+   - 收到高德通知時主動發送廣播連線請求。
+4. MainActivity.kt & activity_main.xml:
+   - UI 新增「廣播握手」按鈕 (btnPingAmap)，方便使用者手動測試高德廣播連線。
+   - onResume 時自動發送連線握手。
