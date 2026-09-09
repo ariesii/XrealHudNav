@@ -55,17 +55,51 @@ class MapsNotificationListenerService : NotificationListenerService() {
      * 註冊高德地圖標準導航廣播監聽器
      */
     private fun registerAmapBroadcastReceiver() {
-        // 使用全面支援 zd423/AMap- 協定之型別安全 AmapBroadcastReceiver
-        amapReceiver = com.xreal.hudnav.receiver.AmapBroadcastReceiver()
-        val filter = IntentFilter(ACTION_AMAP_BROADCAST).apply {
-            addAction("com.autonavi.minimap.action.NAVIGATION_INFO")
+        amapReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == ACTION_AMAP_BROADCAST) {
+                    val keyType = intent.getIntExtra("KEY_TYPE", 0)
+                    NavStateRepository.appendNotificationLog("廣播[高德] KEY_TYPE=$keyType")
+                    if (keyType == 10001) { // 導航資訊更新
+                        val iconCode = intent.getIntExtra("EXTRA_MNAEUVER_ID", intent.getIntExtra("EXTRA_ICON", 0))
+                        val nextRoad = intent.getStringExtra("EXTRA_NEXT_ROAD_NAME").orEmpty()
+                        val remainDis = intent.getIntExtra("EXTRA_SEG_REMAIN_DIS", 0)
+
+                        Log.i(TAG, "收到高德車載廣播 -> 動作代碼: $iconCode, 下一路口: $nextRoad, 剩餘公尺: $remainDis")
+                        NavStateRepository.appendNotificationLog("高德廣播路況: $nextRoad, $remainDis m, code=$iconCode")
+
+                        if (iconCode > 0 || nextRoad.isNotBlank()) {
+                            val maneuver = ManeuverType.fromAmapIconCode(iconCode)
+                            val current = NavStateRepository.navState.value
+                            val generatedLanes = buildLanesForManeuver(maneuver)
+                            val trafficBars = listOf(
+                                com.xreal.hudnav.model.TrafficSegment("#34C759", 0.6f),
+                                com.xreal.hudnav.model.TrafficSegment("#FFCC00", 0.25f),
+                                com.xreal.hudnav.model.TrafficSegment("#FF3B30", 0.15f)
+                            )
+                            NavStateRepository.updateNavInfo(
+                                current.copy(
+                                    maneuver = maneuver,
+                                    distance = if (remainDis > 0) "${remainDis}m" else current.distance,
+                                    distanceMeters = if (remainDis > 0) remainDis else current.distanceMeters,
+                                    roadName = if (nextRoad.isNotBlank()) nextRoad else current.roadName,
+                                    lanes = generatedLanes,
+                                    trafficSegments = trafficBars,
+                                    mapSource = "高德地圖",
+                                    isNavigating = true
+                                )
+                            )
+                        }
+                    }
+                }
+            }
         }
+        val filter = IntentFilter(ACTION_AMAP_BROADCAST)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(amapReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
             registerReceiver(amapReceiver, filter)
         }
-        Log.i(TAG, "已為 NotificationService 註冊全功能高德標準廣播接收器")
     }
 
     private fun unregisterAmapBroadcastReceiver() {

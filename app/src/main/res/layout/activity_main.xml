@@ -109,6 +109,14 @@
                             android:layout_height="wrap_content"
                             android:text="懸浮窗"
                             android:textColor="@color/hud_accent_amber" />
+
+                        <Button
+                            android:id="@+id/btnConnectAmap"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="連線高德"
+                            android:textColor="#00E676" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

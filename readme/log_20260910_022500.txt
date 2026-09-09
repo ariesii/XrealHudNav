@@ -1,0 +1,100 @@
+================================================================================
+Antigravity 操作與學習日誌 (Operation & Learning Log)
+時間戳記：20260910_022500
+專案名稱：XrealHudNav
+核心任務：深入剖析 zd423/AMap- (Navi-Link) 高德廣播開源專案，徹底解決高德導航抓不到資料的問題
+================================================================================
+
+【一、 問題背景與突破性發現 (Problem Background & Breakthrough)】
+1. 使用者提問與線索：
+   - 使用者反映：「高德導航仍然找不到資料，請參考這個網站的截取方式」。
+   - 透過系統剪貼簿成功獲取關鍵專案連結：
+     https://github.com/zd423/AMap- (Navi-Link 增強版高德導航伴侶)
+
+2. 剖析 zd423/AMap- 原始碼，找出過去「抓不到資料」的兩大致命根因：
+   (1) 致命根因一：Android 8.0+ 隱式廣播限制（Background Execution Limits）
+       - 高德發送廣播使用 Action: AUTONAVI_STANDARD_BROADCAST_SEND，發送時並未指定包名。
+       - Android 8.0 (API 26) 以上系統，若只在 AndroidManifest.xml 靜態宣告 <receiver>，
+         系統會直接丟棄所有非本應用的隱式廣播！
+       - 在過去版本中，MainActivity 只有宣告發送握手，但根本沒有透過 ContextCompat.registerReceiver 動態註冊！
+         導致使用者在手機上執行時，高德發出的廣播全部被系統在底層攔截。
+       - 解決方案：必須在 Activity 或前台服務中，使用 ContextCompat.registerReceiver(..., RECEIVER_EXPORTED) 動態註冊！
+
+   (2) 致命根因二：型別不匹配致命 Bug (Android getIntExtra 的陷阱)
+       - 高德地圖在不同版本（手機版、車機版、v15、v16）中，Bundle 裡的欄位型別並不固定！
+         例如：KEY_TYPE、ICON、SEG_REMAIN_DIS 在某些版本中是 String（例如 "10001" 或 "500米"），
+         而有些版本是 Number (Int/Float)。
+       - 若在程式中直接呼叫 intent.getIntExtra("KEY_TYPE", 0)，一旦遇到 String 型別，
+         Android 官方實作會直接返回預設值 0！導致 switch / when 分支根本進不去。
+       - 解決方案：引進 zd423/AMap- 的型別安全提取器 getIntSafe 與 getStringSafe，
+         相容 Number、String 與 Float 解析。
+
+   (3) 致命根因三：高德廣播協定欄位與 KEY_TYPE 不完整
+       - 過去程式只監聽 10001，而且把車道線和紅綠燈誤放在其他地方。
+       - 真正的官方完整協定為：
+         * KEY_TYPE = 10001：主要導航資訊 (NEW_ICON, ICON, SEG_REMAIN_DIS_AUTO, NEXT_ROAD_NAME, CUR_SPEED, LIMITED_SPEED, CAMERA_DIST, ETA_TEXT)
+         * KEY_TYPE = 13012：官方車道線專屬廣播 (EXTRA_DRIVE_WAY JSON 格式)
+         * KEY_TYPE = 60073：官方紅綠燈狀態與倒數秒數 (trafficLightStatus, redLightCountDownSeconds)
+         * KEY_TYPE = 13011：官方 TMC 路況彩色分段 (EXTRA_TMC_SEGMENT)
+         * KEY_TYPE = 10019：狀態更新 (EXTRA_STATE = 9 導航結束)
+
+   (4) 致命根因四：主動握手機制不全
+       - 高德預設不一定會對外廣播，需要向高德發送 AUTONAVI_STANDARD_BROADCAST_RECV：
+         * KEY_TYPE = 10013, EXTRA_TYPE = 1 (請求開啟廣播)
+         * KEY_TYPE = 13030 (請求當前導航狀態)
+         * 同時對 com.autonavi.minimap (手機版) 與 com.autonavi.amapauto (車機版) 發送定向廣播。
+
+--------------------------------------------------------------------------------
+【二、 執行的檔案異動與操作指令 (File Modifications & Commands)】
+
+1. 檔案備份操作（依據個人偏好規則：修改前先備份）：
+   - c:\AI_project\XrealAPK\backup\AmapBroadcastReceiver_20260910_022500.kt.bak
+   - c:\AI_project\XrealAPK\backup\MapsNotificationListenerService_20260910_022500.kt.bak
+   - c:\AI_project\XrealAPK\backup\MainActivity_20260910_022500.kt.bak
+   - c:\AI_project\XrealAPK\backup\AndroidManifest_20260910_022500.xml.bak
+
+2. 程式碼全面重構：
+   (1) [REWRITE] app/src/main/java/com/xreal/hudnav/receiver/AmapBroadcastReceiver.kt
+       - 導入 getIntSafe / getStringSafe 安全轉換器。
+       - 完整解析 10001、13012 (車道線 JSON)、60073 (紅綠燈倒數)、13011 (TMC)、10019 (狀態切換)。
+       - 升級 requestAmapBroadcast() 支援多目標定向廣播握手。
+   (2) [MODIFY] app/src/main/java/com/xreal/hudnav/MainActivity.kt
+       - 於 onCreate() 中動態註冊 AmapBroadcastReceiver (RECEIVER_EXPORTED)。
+       - 於 onDestroy() 中安全取消註冊。
+       - 新增「連線高德」按鈕點擊監聽，方便手動發送握手並給出即時 Toast 回饋。
+   (3) [MODIFY] app/src/main/res/layout/activity_main.xml
+       - 於頂部權限列加入「連線高德」專屬快捷按鈕 (btnConnectAmap)。
+   (4) [MODIFY] app/src/main/java/com/xreal/hudnav/service/MapsNotificationListenerService.kt
+       - 統一廣播監聽實例為全功能之 AmapBroadcastReceiver。
+   (5) [MODIFY] app/src/main/AndroidManifest.xml
+       - 加入 INTERNET 權限與高德廣播 Action 意圖支援。
+
+3. Git 與 GitHub Actions 操作指令：
+   # 檢查工作目錄
+   git status -s
+
+   # 加入追蹤
+   git add app/ backup/ readme/
+
+   # 建立 Git 提交
+   git commit -m "feat: 導入 zd423/AMap- 完整廣播協定與型別安全機制，修復高德導航資料獲取"
+
+   # 推送遠端觸發雲端構建
+   git push origin main
+
+   # 監控構建
+   gh run list --limit 2
+   gh run watch <Run_ID>
+
+   # 下載最新 APK
+   gh run download <Run_ID> --dir release-apk
+
+--------------------------------------------------------------------------------
+【三、 驗證指引 (Testing & Verification Guide)】
+1. 安裝最新 APK 後打開 App。
+2. 點擊頂部的【連線高德】按鈕：
+   - 觀察日誌看板，會顯示「[高德廣播] 已發送多重握手連線請求 (10013/13030)」。
+3. 打開手機上的高德地圖，開始一條路線導航：
+   - 切回 HUD App，日誌看板會即時印出高德原始廣播 [高德收到] TYPE=10001 / TYPE=13012 / TYPE=60073。
+   - HUD 畫面即時同步路名、大箭頭、公尺距離、限速照相、車道線與紅綠燈倒數秒數！
+================================================================================

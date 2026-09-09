@@ -2,12 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 網路與定位權限 (高德地圖與在線輔助) -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
     <!-- 系統保活與通知權限 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -17,19 +11,15 @@
     <!-- 系統懸浮窗權限（用於壓制鎖屏時鐘，將 Presentation 視窗提升至最高層級） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-    <!-- 套件查詢權限宣告：允許讀取高德地圖與 Google 地圖的資源與廣播 (Android 11+) -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
+    <!-- GPS 與網路高精度定位權限 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- 套件可見性宣告：允許讀取高德地圖與 Google 地圖的資源與通知 (Android 11+) -->
     <queries>
         <package android:name="com.autonavi.minimap" />
         <package android:name="com.autonavi.amapauto" />
         <package android:name="com.google.android.apps.maps" />
-        <intent>
-            <action android:name="AUTONAVI_STANDARD_BROADCAST_SEND" />
-        </intent>
-        <intent>
-            <action android:name="AUTONAVI_STANDARD_BROADCAST_RECV" />
-        </intent>
     </queries>
 
     <application
@@ -70,7 +60,7 @@
         <receiver
             android:name=".receiver.AmapBroadcastReceiver"
             android:exported="true">
-            <intent-filter android:priority="1000">
+            <intent-filter>
                 <action android:name="AUTONAVI_STANDARD_BROADCAST_SEND" />
                 <action android:name="com.autonavi.minimap.action.NAVIGATION_INFO" />
             </intent-filter>

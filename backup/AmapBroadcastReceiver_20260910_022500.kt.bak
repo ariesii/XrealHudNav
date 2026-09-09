@@ -1,0 +1,222 @@
+package com.xreal.hudnav.receiver
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import com.xreal.hudnav.model.LaneItem
+import com.xreal.hudnav.model.ManeuverType
+import com.xreal.hudnav.model.NavInfo
+import com.xreal.hudnav.model.NavStateRepository
+import com.xreal.hudnav.model.TrafficLightState
+import com.xreal.hudnav.model.TrafficSegment
+
+/**
+ * 高德地圖標準車載廣播接收器 (AutoNavi Standard Broadcast Receiver)
+ * 監聽 Action: AUTONAVI_STANDARD_BROADCAST_SEND
+ * 用於接收高德地圖官方車載導航廣播，直接獲取高精確度的轉向、距離、路名、車速與紅綠燈資訊。
+ */
+class AmapBroadcastReceiver : BroadcastReceiver() {
+
+    companion object {
+        private const val TAG = "AmapReceiver"
+        const val ACTION_AMAP_SEND = "AUTONAVI_STANDARD_BROADCAST_SEND"
+        const val ACTION_AMAP_RECV = "AUTONAVI_STANDARD_BROADCAST_RECV"
+
+        /**
+         * 向高德地圖主動發送握手請求，要求高德地圖啟用車載標準導航廣播發送
+         * @param context Android 上下文環境
+         */
+        fun requestAmapBroadcast(context: Context) {
+            try {
+                // KEY_TYPE = 10013: 請求開啟廣播發送
+                val intent = Intent(ACTION_AMAP_RECV).apply {
+                    putExtra("KEY_TYPE", 10013)
+                    putExtra("EXTRA_TYPE", 1)
+                }
+                context.sendBroadcast(intent)
+                NavStateRepository.appendNotificationLog("[高德廣播] 已發送廣播連線握手請求 (KEY_TYPE=10013)")
+            } catch (e: Exception) {
+                Log.e(TAG, "發送高德廣播握手失敗", e)
+            }
+        }
+    }
+
+    override fun onReceive(context: Context?, intent: Intent?) {
+        if (intent == null || context == null) return
+        val action = intent.action ?: return
+
+        if (action == ACTION_AMAP_SEND) {
+            val keyType = intent.getIntExtra("KEY_TYPE", 0)
+            Log.d(TAG, "收到高德廣播 KEY_TYPE: $keyType")
+
+            when (keyType) {
+                10001 -> handleNaviInfoUpdate(intent)
+                10019 -> handleTrafficLightUpdate(intent)
+                10002 -> handleNaviFinish()
+                else -> {
+                    val extrasDump = intent.extras?.keySet()?.joinToString(", ") { key ->
+                        "$key=${intent.extras?.get(key)}"
+                    } ?: "無資料"
+                    NavStateRepository.appendNotificationLog("[高德廣播] 收到廣播 TYPE $keyType: $extrasDump")
+                }
+            }
+        }
+    }
+
+    /**
+     * 處理 10001 導航主要資訊更新
+     */
+    private fun handleNaviInfoUpdate(intent: Intent) {
+        val nextRoadName = intent.getStringExtra("NEXT_ROAD_NAME") ?: ""
+        val curRoadName = intent.getStringExtra("CUR_ROAD_NAME") ?: ""
+        val segRemainDis = intent.getIntExtra("SEG_REMAIN_DIS", -1)
+        val routeRemainDis = intent.getIntExtra("ROUTE_REMAIN_DIS", -1)
+        val routeRemainTime = intent.getIntExtra("ROUTE_REMAIN_TIME", -1)
+        val iconType = intent.getIntExtra("ICON", 1)
+        val curSpeed = intent.getIntExtra("CUR_SPEED", -1)
+        val cameraSpeed = intent.getIntExtra("CAMERA_SPEED", 0)
+        val cameraDist = intent.getIntExtra("CAMERA_DIST", 0)
+        val driveWayStr = intent.getStringExtra("DRIVE_WAY")
+
+        val maneuver = ManeuverType.fromAmapIconCode(iconType)
+        val distanceStr = if (segRemainDis >= 1000) {
+            String.format("%.1f公里", segRemainDis / 1000.0)
+        } else if (segRemainDis >= 0) {
+            "${segRemainDis}公尺"
+        } else {
+            "直行"
+        }
+
+        val remainingDistStr = if (routeRemainDis >= 1000) {
+            String.format("%.1f公里", routeRemainDis / 1000.0)
+        } else if (routeRemainDis >= 0) {
+            "${routeRemainDis}公尺"
+        } else {
+            "--"
+        }
+
+        val remainingTimeStr = if (routeRemainTime > 0) {
+            val mins = routeRemainTime / 60
+            if (mins >= 60) "${mins / 60}小時${mins % 60}分" else "${mins}分鐘"
+        } else {
+            "--"
+        }
+
+        val lanes = parseDriveWay(driveWayStr, maneuver)
+        val currentRepo = NavStateRepository.navState.value
+
+        val navInfo = NavInfo(
+            maneuver = maneuver,
+            distance = distanceStr,
+            distanceMeters = if (segRemainDis >= 0) segRemainDis else 500,
+            roadName = if (nextRoadName.isNotBlank()) nextRoadName else curRoadName,
+            roadNumber = if (curRoadName.isNotBlank()) curRoadName else null,
+            nextAction = maneuver.description,
+            eta = currentRepo.eta,
+            remainingTime = remainingTimeStr,
+            remainingDistance = remainingDistStr,
+            currentSpeed = if (curSpeed >= 0) curSpeed else currentRepo.currentSpeed,
+            speedLimit = if (cameraSpeed > 0) cameraSpeed else currentRepo.speedLimit,
+            cameraWarning = if (cameraSpeed > 0) "限速 $cameraSpeed" else currentRepo.cameraWarning,
+            cameraDistance = if (cameraDist > 0) cameraDist else currentRepo.cameraDistance,
+            trafficLightState = currentRepo.trafficLightState,
+            trafficLightSeconds = currentRepo.trafficLightSeconds,
+            mapSource = "高德地圖",
+            isNavigating = true,
+            lanes = lanes,
+            trafficSegments = listOf(
+                TrafficSegment("#34C759", 0.65f),
+                TrafficSegment("#FFCC00", 0.25f),
+                TrafficSegment("#FF3B30", 0.10f)
+            ),
+            routeProgress = 0.5f
+        )
+
+        NavStateRepository.appendNotificationLog("[高德廣播] 下一路: $nextRoadName | 距: $distanceStr | 動作: ${maneuver.description}")
+        NavStateRepository.updateNavInfo(navInfo)
+    }
+
+    /**
+     * 處理 10019 紅綠燈倒數更新
+     */
+    private fun handleTrafficLightUpdate(intent: Intent) {
+        val lightStatus = intent.getIntExtra("TRAFFIC_LIGHT_STATUS", 0)
+        val waitSeconds = intent.getIntExtra("WAIT_LIGHT_TIME", -1)
+
+        val state = when (lightStatus) {
+            1 -> TrafficLightState.RED
+            2 -> TrafficLightState.GREEN
+            3 -> TrafficLightState.YELLOW
+            else -> TrafficLightState.NONE
+        }
+
+        val currentNav = NavStateRepository.navState.value
+        NavStateRepository.updateNavInfo(
+            currentNav.copy(
+                trafficLightState = state,
+                trafficLightSeconds = if (waitSeconds > 0) waitSeconds else null
+            )
+        )
+        NavStateRepository.appendNotificationLog("[高德廣播] 紅綠燈: $state | 倒數: ${waitSeconds}秒")
+    }
+
+    /**
+     * 處理 10002 導航結束
+     */
+    private fun handleNaviFinish() {
+        NavStateRepository.appendNotificationLog("[高德廣播] 導航已結束")
+        val currentNav = NavStateRepository.navState.value
+        NavStateRepository.updateNavInfo(
+            currentNav.copy(
+                isNavigating = false,
+                roadName = "導航已結束",
+                distance = "--"
+            )
+        )
+    }
+
+    private fun parseDriveWay(driveWayStr: String?, maneuver: ManeuverType): List<LaneItem> {
+        if (!driveWayStr.isNullOrBlank()) {
+            val laneList = mutableListOf<LaneItem>()
+            val tokens = driveWayStr.split(",")
+            for (item in tokens) {
+                val trimmed = item.trim()
+                if (trimmed.isEmpty()) continue
+                val isOptimal = trimmed.endsWith("*") || trimmed.contains("1")
+                val direction = when {
+                    trimmed.contains("left", ignoreCase = true) || trimmed.contains("2") -> "LEFT"
+                    trimmed.contains("right", ignoreCase = true) || trimmed.contains("3") -> "RIGHT"
+                    trimmed.contains("uturn", ignoreCase = true) || trimmed.contains("8") -> "UTURN"
+                    else -> "STRAIGHT"
+                }
+                laneList.add(LaneItem(direction, isOptimal))
+            }
+            if (laneList.isNotEmpty()) return laneList
+        }
+
+        return when (maneuver) {
+            ManeuverType.TURN_RIGHT, ManeuverType.SLIGHT_RIGHT -> listOf(
+                LaneItem("STRAIGHT", false),
+                LaneItem("STRAIGHT", false),
+                LaneItem("STRAIGHT", false),
+                LaneItem("RIGHT", true)
+            )
+            ManeuverType.TURN_LEFT, ManeuverType.SLIGHT_LEFT -> listOf(
+                LaneItem("LEFT", true),
+                LaneItem("STRAIGHT", false),
+                LaneItem("STRAIGHT", false)
+            )
+            ManeuverType.U_TURN -> listOf(
+                LaneItem("UTURN", true),
+                LaneItem("STRAIGHT", false),
+                LaneItem("STRAIGHT", false)
+            )
+            else -> listOf(
+                LaneItem("STRAIGHT", true),
+                LaneItem("STRAIGHT", true),
+                LaneItem("RIGHT", false)
+            )
+        }
+    }
+}

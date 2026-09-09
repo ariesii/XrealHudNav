@@ -52,7 +52,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
 
     private lateinit var displayAssistant: DisplayAssistant
     private lateinit var gpsSpeedManager: GpsSpeedManager
-    private val amapBroadcastReceiver = com.xreal.hudnav.receiver.AmapBroadcastReceiver()
 
     // 狀態與權限元件
     private lateinit var indicatorGlasses: View
@@ -61,7 +60,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var btnGrantPermission: Button
     private lateinit var btnGrantGps: Button
     private lateinit var btnGrantOverlay: Button
-    private lateinit var btnConnectAmap: Button
     private lateinit var btnToggleDemo: Button
     private lateinit var btnEnterBlackout: Button
     private lateinit var btnPingAmap: Button
@@ -135,7 +133,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         setupDisplayAssistant()
         setupBatteryMonitoring()
         observeNavState()
-        registerAmapReceiver()
     }
 
     override fun onResume() {
@@ -159,9 +156,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         batteryReceiver?.let {
             try { unregisterReceiver(it) } catch (_: Exception) {}
         }
-        try {
-            unregisterReceiver(amapBroadcastReceiver)
-        } catch (_: Exception) {}
     }
 
     private fun initViews() {
@@ -171,7 +165,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         btnGrantPermission = findViewById(R.id.btnGrantPermission)
         btnGrantGps = findViewById(R.id.btnGrantGps)
         btnGrantOverlay = findViewById(R.id.btnGrantOverlay)
-        btnConnectAmap = findViewById(R.id.btnConnectAmap)
         btnToggleDemo = findViewById(R.id.btnToggleDemo)
         btnEnterBlackout = findViewById(R.id.btnEnterBlackout)
         btnPingAmap = findViewById(R.id.btnPingAmap)
@@ -634,26 +627,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             return
         }
         super.onBackPressed()
-    }
-
-
-    /**
-     * 動態註冊高德地圖車載標準廣播接收器 (相容 Android 8.0 ~ 15)
-     */
-    private fun registerAmapReceiver() {
-        try {
-            val filter = IntentFilter(com.xreal.hudnav.receiver.AmapBroadcastReceiver.ACTION_AMAP_SEND).apply {
-                addAction("com.autonavi.minimap.action.NAVIGATION_INFO")
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.registerReceiver(this, amapBroadcastReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
-            } else {
-                registerReceiver(amapBroadcastReceiver, filter)
-            }
-            NavStateRepository.appendNotificationLog("📡 已在主介面動態註冊高德標準廣播監聽器 (RECEIVER_EXPORTED)")
-        } catch (e: Exception) {
-            Log.e("MainActivity", "註冊高德廣播失敗", e)
-        }
     }
 
     override fun onGlassesConnected(display: Display) {

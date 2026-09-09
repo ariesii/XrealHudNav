@@ -1,0 +1,15 @@
+# 任務狀態記錄 (Task Record)
+時間戳記：20260910_022500
+專案：XrealHudNav
+
+## 核心任務清單
+- [x] 調研 zd423/AMap- (Navi-Link) 專案原始碼與資料擷取方式
+- [x] 備份相關檔案至 backup/ 目錄
+- [x] 重構 `AmapBroadcastReceiver.kt`，導入 getIntSafe/getStringSafe 與 5 大 KEY_TYPE
+- [x] 在 `MainActivity.kt` 加入動態註冊 `RECEIVER_EXPORTED`
+- [x] 在 `activity_main.xml` 與 `MainActivity.kt` 加入「連線高德」按鈕
+- [x] 更新 `MapsNotificationListenerService.kt` 統一廣播接收
+- [x] 更新 `AndroidManifest.xml` 權限與 queries
+- [x] 產出繁體中文學習日誌與紀錄文件 (txt 與 html)
+- [ ] 執行 git commit 與 push
+- [ ] 監控 GitHub Actions 構建並下載最新 APK 至 release-apk/

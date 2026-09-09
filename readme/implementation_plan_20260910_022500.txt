@@ -1,0 +1,12 @@
+# 實作計劃記錄 (Implementation Plan)
+時間戳記：20260910_022500
+專案：XrealHudNav
+
+## 任務目標
+根據 zd423/AMap- 擷取方式，徹底修復高德導航資料無法接收之問題。
+
+## 核心改動架構
+1. `AmapBroadcastReceiver.kt`：重構廣播協議解析器。
+2. `MainActivity.kt`：加入動態註冊與「連線高德」按鈕事件。
+3. `activity_main.xml`：新增 UI 按鈕。
+4. `AndroidManifest.xml`：完善權限與廣播 Action。
