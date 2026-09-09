@@ -288,13 +288,13 @@ class MapsNotificationListenerService : NotificationListenerService() {
 
     private fun buildLanesForManeuver(maneuver: ManeuverType): List<com.xreal.hudnav.model.LaneItem> {
         return when (maneuver) {
-            ManeuverType.TURN_RIGHT, ManeuverType.SLIGHT_RIGHT -> listOf(
+            ManeuverType.TURN_RIGHT, ManeuverType.SLIGHT_RIGHT, ManeuverType.SHARP_RIGHT -> listOf(
                 com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
                 com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
                 com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
                 com.xreal.hudnav.model.LaneItem("RIGHT", true)
             )
-            ManeuverType.TURN_LEFT, ManeuverType.SLIGHT_LEFT -> listOf(
+            ManeuverType.TURN_LEFT, ManeuverType.SLIGHT_LEFT, ManeuverType.SHARP_LEFT -> listOf(
                 com.xreal.hudnav.model.LaneItem("LEFT", true),
                 com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
                 com.xreal.hudnav.model.LaneItem("STRAIGHT", false)
