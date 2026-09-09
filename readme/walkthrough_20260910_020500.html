@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>成果導覽</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 24px; background: #121212; color: #E0E0E0; }
+        h1, h2, h3 { color: #00E5FF; }
+        pre { background: #1E1E1E; padding: 16px; border-radius: 8px; border: 1px solid #333; overflow-x: auto; color: #69F0AE; }
+        .badge { display: inline-block; background: #00B0FF; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <pre># 成果導覽與改動說明 (Walkthrough)
+時間戳記：20260910_020500
+專案：XrealHudNav
+
+## 本次更新重點摘要
+本次更新徹底解決了使用者反映在手機端預覽與全螢幕模式下，導航路名與車速數字互相重疊遮蔽的問題，同時嚴格確保外接 XREAL Air 2 Pro 眼鏡的 1080p 橫向畫面不受任何影響。
+
+## 架構對比
+### 改動前：
+- 手機端的「即時預覽視窗」與「全螢幕模式」直接引用為 1920x1080 橫向眼鏡設計的 `presentation_xreal_hud.xml`。
+- 在直立手機（寬度約 380dp）上，原本橫向分居兩側的路名（50sp）與車速（96sp）擠在同一水平空間，造成字體嚴重重疊。
+
+### 改動後：
+- **手機端直向專屬儀表 (`view_phone_hud_dashboard.xml`)**：
+  專為手機直式螢幕優化，劃分為 5 大垂直清晰區塊：
+  1. 系統狀態與地圖來源（HUD 就緒、標準模式、🔋 電量）。
+  2. 轉向圖標與下一步距離（左邊大箭頭、右邊 38sp 距離與轉向動作）。
+  3. 道路橫幅（22sp 道路名獨立水平條，一目瞭然）。
+  4. GPS 即時車速（50sp 翠綠大字 + 測速照相提醒膠囊）。
+  5. 車道線指示與紅綠燈倒數秒數膠囊（🔴 24s）。
+- **眼鏡端 (`presentation_xreal_hud.xml`)**：
+  完全保留不變！外接 XREAL 眼鏡插上後依然呈現 1920x1080 雙眼橫向極致 HUD。
+
+## 檔案異動清單
+1. `app/src/main/res/layout/view_phone_hud_dashboard.xml` (新增)
+2. `app/src/main/res/layout/activity_main.xml` (修改)
+3. `app/src/main/java/com/xreal/hudnav/MainActivity.kt` (修改)
+4. `backup/activity_main_20260910_020500.xml.bak` (備份)
+5. `backup/MainActivity_20260910_020500.kt.bak` (備份)
+</pre>
+</body>
+</html>

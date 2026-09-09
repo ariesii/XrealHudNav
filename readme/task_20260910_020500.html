@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>任務狀態記錄</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 24px; background: #121212; color: #E0E0E0; }
+        h1, h2, h3 { color: #00E5FF; }
+        pre { background: #1E1E1E; padding: 16px; border-radius: 8px; border: 1px solid #333; overflow-x: auto; color: #69F0AE; }
+        .badge { display: inline-block; background: #00B0FF; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <pre># 任務狀態記錄 (Task Record)
+時間戳記：20260910_020500
+專案：XrealHudNav
+
+## 核心任務清單
+- [x] 備份現有 `activity_main.xml` 與 `MainActivity.kt` 至 `backup/` 目錄
+- [x] 建立手機直立專用 HUD 導航佈局 `view_phone_hud_dashboard.xml`
+- [x] 更新 `activity_main.xml` 將主畫面預覽與全螢幕容器切換為直立儀表
+- [x] 保留外接眼鏡 `presentation_xreal_hud.xml` 完全不動，確保眼鏡端 1080p 超寬 HUD 零影響
+- [x] 重構 `MainActivity.kt` 加入 `PhoneHudViewHolder` 統一管理直向儀表渲染
+- [x] 產出繁體中文學習日誌與紀錄文件 (txt 與 html)
+- [ ] 執行 git commit 與 push
+- [ ] 監控 GitHub Actions 構建並下載最新 APK 至 release-apk/
+</pre>
+</body>
+</html>

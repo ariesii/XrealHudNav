@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>實作計劃</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 24px; background: #121212; color: #E0E0E0; }
+        h1, h2, h3 { color: #00E5FF; }
+        pre { background: #1E1E1E; padding: 16px; border-radius: 8px; border: 1px solid #333; overflow-x: auto; color: #69F0AE; }
+        .badge { display: inline-block; background: #00B0FF; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <pre># 實作計劃記錄 (Implementation Plan)
+時間戳記：20260910_020500
+專案：XrealHudNav
+
+## 任務目標
+在不影響外接眼鏡畫面輸出的前提下，使手機端在不戴眼鏡時，也能完整且清晰地獲取 HUD 導航資訊，根絕文字疊加擠壓現象。
+
+## 設計原則
+1. **雙端隔離**：眼鏡端（橫向 1080p）與手機端（直向 Portrait）使用各自專屬佈局。
+2. **層次流暢**：直向手機佈局採用由上而下卡片流，各資訊塊不搶佔同一水平空間。
+3. **數據同步**：無論來源是高德地圖還是 Google Maps，透過 StateFlow 一併推送至眼鏡端與手機端儀表。
+</pre>
+</body>
+</html>

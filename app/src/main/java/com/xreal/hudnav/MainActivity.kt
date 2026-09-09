@@ -42,19 +42,18 @@ import com.xreal.hudnav.service.NavDemoSimulator
 import com.xreal.hudnav.speed.GpsSpeedManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * 手機端主控制介面
- * 提供 HUD 即時鏡像預覽、即時接收數據看板 (Inspector)、全螢幕模擬模式與一鍵測試注入工具
+ * 採用手機直向專屬 HUD 儀表 (Phone HUD Dashboard)，排版層次分明、絕不重疊！
+ * 同時保持眼鏡端 (XREAL Air 2 Pro) 1920x1080 原版橫向 HUD 輸出，兩端各自最優呈現。
  */
 class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListener {
 
     private lateinit var displayAssistant: DisplayAssistant
     private lateinit var gpsSpeedManager: GpsSpeedManager
 
-    // 狀態元件
+    // 狀態與權限元件
     private lateinit var indicatorGlasses: View
     private lateinit var tvGlassesStatus: TextView
     private lateinit var tvBatteryStatus: TextView
@@ -82,7 +81,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var btnInjectGoogleLeft: Button
     private lateinit var btnInjectTrafficLight: Button
 
-    // 全螢幕 HUD 預覽元件
+    // 全螢幕 HUD 元件
     private lateinit var btnFullscreenPreview: Button
     private lateinit var layoutFullscreenHud: FrameLayout
     private lateinit var btnCloseFullscreen: Button
@@ -93,71 +92,9 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var rbEco: RadioButton
     private lateinit var rbUltraEco: RadioButton
 
-    // 鏡像預覽元件 (小視窗)
-    private lateinit var previewHudContainer: LinearLayout
-    private lateinit var previewIvManeuver: ImageView
-    private lateinit var previewTvDistance: TextView
-    private lateinit var previewTvRoadNumber: TextView
-    private lateinit var previewTvRoadName: TextView
-    private lateinit var previewLayoutNextAction: LinearLayout
-    private lateinit var previewTvNextAction: TextView
-    private lateinit var previewLayoutTripSummary: LinearLayout
-    private lateinit var previewTvTripSummary: TextView
-    private lateinit var previewTvStandbyHint: TextView
-    private lateinit var previewLayoutSpeedometer: LinearLayout
-    private lateinit var previewTvSpeedValue: TextView
-    private lateinit var previewLayoutCameraAlert: LinearLayout
-    private lateinit var previewTvCameraTag: TextView
-    private lateinit var previewTvCameraDistance: TextView
-    private lateinit var previewTvMapSourceTag: TextView
-    private lateinit var previewLayoutProgressTrack: View
-    private lateinit var previewViewProgressBar: View
-    private lateinit var previewLayoutSystemStatus: LinearLayout
-    private lateinit var previewTvPowerModeTag: TextView
-    private lateinit var previewTvBatteryIcon: TextView
-    private lateinit var previewTvBatteryLevel: TextView
-    private lateinit var previewLayoutTrafficLight: LinearLayout
-    private lateinit var previewViewTrafficLightDot: View
-    private lateinit var previewTvTrafficLightSeconds: TextView
-    private lateinit var previewTvTrafficLightLabel: TextView
-    private lateinit var previewLayoutLaneGuidance: LinearLayout
-    private lateinit var previewLayoutLanesContainer: LinearLayout
-    private lateinit var previewLayoutTrafficBarContainer: View
-    private lateinit var previewLayoutTrafficBarSegments: LinearLayout
-    private lateinit var previewTvVehicleProgressMarker: TextView
-
-    // 全螢幕 HUD 元件
-    private lateinit var fullHudContainer: LinearLayout
-    private lateinit var fullIvManeuver: ImageView
-    private lateinit var fullTvDistance: TextView
-    private lateinit var fullTvRoadNumber: TextView
-    private lateinit var fullTvRoadName: TextView
-    private lateinit var fullLayoutNextAction: LinearLayout
-    private lateinit var fullTvNextAction: TextView
-    private lateinit var fullLayoutTripSummary: LinearLayout
-    private lateinit var fullTvTripSummary: TextView
-    private lateinit var fullTvStandbyHint: TextView
-    private lateinit var fullLayoutSpeedometer: LinearLayout
-    private lateinit var fullTvSpeedValue: TextView
-    private lateinit var fullLayoutCameraAlert: LinearLayout
-    private lateinit var fullTvCameraTag: TextView
-    private lateinit var fullTvCameraDistance: TextView
-    private lateinit var fullTvMapSourceTag: TextView
-    private lateinit var fullLayoutProgressTrack: View
-    private lateinit var fullViewProgressBar: View
-    private lateinit var fullLayoutSystemStatus: LinearLayout
-    private lateinit var fullTvPowerModeTag: TextView
-    private lateinit var fullTvBatteryIcon: TextView
-    private lateinit var fullTvBatteryLevel: TextView
-    private lateinit var fullLayoutTrafficLight: LinearLayout
-    private lateinit var fullViewTrafficLightDot: View
-    private lateinit var fullTvTrafficLightSeconds: TextView
-    private lateinit var fullTvTrafficLightLabel: TextView
-    private lateinit var fullLayoutLaneGuidance: LinearLayout
-    private lateinit var fullLayoutLanesContainer: LinearLayout
-    private lateinit var fullLayoutTrafficBarContainer: View
-    private lateinit var fullLayoutTrafficBarSegments: LinearLayout
-    private lateinit var fullTvVehicleProgressMarker: TextView
+    // 手機直向專屬 HUD 儀表 ViewHolder (分別用於主介面預覽與全螢幕模式)
+    private lateinit var dashboardHolder: PhoneHudViewHolder
+    private lateinit var fullscreenHolder: PhoneHudViewHolder
 
     private var batteryReceiver: BroadcastReceiver? = null
 
@@ -244,7 +181,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         tvInspectTrafficLight = findViewById(R.id.tvInspectTrafficLight)
         tvInspectLanes = findViewById(R.id.tvInspectLanes)
 
-        // 注入測試
+        // 注入測試按鈕
         btnInjectAmapRight = findViewById(R.id.btnInjectAmapRight)
         btnInjectGoogleLeft = findViewById(R.id.btnInjectGoogleLeft)
         btnInjectTrafficLight = findViewById(R.id.btnInjectTrafficLight)
@@ -259,73 +196,9 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         rbEco = findViewById(R.id.rbEco)
         rbUltraEco = findViewById(R.id.rbUltraEco)
 
-        // 小視窗預覽元件
-        val previewView = findViewById<View>(R.id.hudPreviewContent)
-        previewHudContainer = previewView.findViewById(R.id.hudContainer)
-        previewIvManeuver = previewView.findViewById(R.id.ivManeuver)
-        previewTvDistance = previewView.findViewById(R.id.tvDistance)
-        previewTvRoadNumber = previewView.findViewById(R.id.tvRoadNumber)
-        previewTvRoadName = previewView.findViewById(R.id.tvRoadName)
-        previewLayoutNextAction = previewView.findViewById(R.id.layoutNextAction)
-        previewTvNextAction = previewView.findViewById(R.id.tvNextAction)
-        previewLayoutTripSummary = previewView.findViewById(R.id.layoutTripSummary)
-        previewTvTripSummary = previewView.findViewById(R.id.tvTripSummary)
-        previewTvStandbyHint = previewView.findViewById(R.id.tvStandbyHint)
-        previewLayoutSystemStatus = previewView.findViewById(R.id.layoutSystemStatus)
-        previewTvPowerModeTag = previewView.findViewById(R.id.tvPowerModeTag)
-        previewLayoutSpeedometer = previewView.findViewById(R.id.layoutSpeedometer)
-        previewTvSpeedValue = previewView.findViewById(R.id.tvSpeedValue)
-        previewTvBatteryIcon = previewView.findViewById(R.id.tvBatteryIcon)
-        previewTvBatteryLevel = previewView.findViewById(R.id.tvBatteryLevel)
-        previewLayoutCameraAlert = previewView.findViewById(R.id.layoutCameraAlert)
-        previewTvCameraTag = previewView.findViewById(R.id.tvCameraTag)
-        previewTvCameraDistance = previewView.findViewById(R.id.tvCameraDistance)
-        previewTvMapSourceTag = previewView.findViewById(R.id.tvMapSourceTag)
-        previewLayoutProgressTrack = previewView.findViewById(R.id.layoutProgressTrack)
-        previewViewProgressBar = previewView.findViewById(R.id.viewProgressBar)
-        previewLayoutTrafficLight = previewView.findViewById(R.id.layoutTrafficLight)
-        previewViewTrafficLightDot = previewView.findViewById(R.id.viewTrafficLightDot)
-        previewTvTrafficLightSeconds = previewView.findViewById(R.id.tvTrafficLightSeconds)
-        previewTvTrafficLightLabel = previewView.findViewById(R.id.tvTrafficLightLabel)
-        previewLayoutLaneGuidance = previewView.findViewById(R.id.layoutLaneGuidance)
-        previewLayoutLanesContainer = previewView.findViewById(R.id.layoutLanesContainer)
-        previewLayoutTrafficBarContainer = previewView.findViewById(R.id.layoutTrafficBarContainer)
-        previewLayoutTrafficBarSegments = previewView.findViewById(R.id.layoutTrafficBarSegments)
-        previewTvVehicleProgressMarker = previewView.findViewById(R.id.tvVehicleProgressMarker)
-
-        // 全螢幕 HUD 元件
-        val fullView = findViewById<View>(R.id.hudFullscreenContent)
-        fullHudContainer = fullView.findViewById(R.id.hudContainer)
-        fullIvManeuver = fullView.findViewById(R.id.ivManeuver)
-        fullTvDistance = fullView.findViewById(R.id.tvDistance)
-        fullTvRoadNumber = fullView.findViewById(R.id.tvRoadNumber)
-        fullTvRoadName = fullView.findViewById(R.id.tvRoadName)
-        fullLayoutNextAction = fullView.findViewById(R.id.layoutNextAction)
-        fullTvNextAction = fullView.findViewById(R.id.tvNextAction)
-        fullLayoutTripSummary = fullView.findViewById(R.id.layoutTripSummary)
-        fullTvTripSummary = fullView.findViewById(R.id.tvTripSummary)
-        fullTvStandbyHint = fullView.findViewById(R.id.tvStandbyHint)
-        fullLayoutSystemStatus = fullView.findViewById(R.id.layoutSystemStatus)
-        fullTvPowerModeTag = fullView.findViewById(R.id.tvPowerModeTag)
-        fullLayoutSpeedometer = fullView.findViewById(R.id.layoutSpeedometer)
-        fullTvSpeedValue = fullView.findViewById(R.id.tvSpeedValue)
-        fullTvBatteryIcon = fullView.findViewById(R.id.tvBatteryIcon)
-        fullTvBatteryLevel = fullView.findViewById(R.id.tvBatteryLevel)
-        fullLayoutCameraAlert = fullView.findViewById(R.id.layoutCameraAlert)
-        fullTvCameraTag = fullView.findViewById(R.id.tvCameraTag)
-        fullTvCameraDistance = fullView.findViewById(R.id.tvCameraDistance)
-        fullTvMapSourceTag = fullView.findViewById(R.id.tvMapSourceTag)
-        fullLayoutProgressTrack = fullView.findViewById(R.id.layoutProgressTrack)
-        fullViewProgressBar = fullView.findViewById(R.id.viewProgressBar)
-        fullLayoutTrafficLight = fullView.findViewById(R.id.layoutTrafficLight)
-        fullViewTrafficLightDot = fullView.findViewById(R.id.viewTrafficLightDot)
-        fullTvTrafficLightSeconds = fullView.findViewById(R.id.tvTrafficLightSeconds)
-        fullTvTrafficLightLabel = fullView.findViewById(R.id.tvTrafficLightLabel)
-        fullLayoutLaneGuidance = fullView.findViewById(R.id.layoutLaneGuidance)
-        fullLayoutLanesContainer = fullView.findViewById(R.id.layoutLanesContainer)
-        fullLayoutTrafficBarContainer = fullView.findViewById(R.id.layoutTrafficBarContainer)
-        fullLayoutTrafficBarSegments = fullView.findViewById(R.id.layoutTrafficBarSegments)
-        fullTvVehicleProgressMarker = fullView.findViewById(R.id.tvVehicleProgressMarker)
+        // 綁定手機專屬直立 HUD 儀表 (卡片小窗與全螢幕滿版)
+        dashboardHolder = PhoneHudViewHolder(findViewById(R.id.phoneDashboardContent))
+        fullscreenHolder = PhoneHudViewHolder(findViewById(R.id.phoneFullscreenContent))
     }
 
     private fun setupListeners() {
@@ -358,9 +231,10 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             Toast.makeText(this, "已發送高德車載廣播連線請求", Toast.LENGTH_SHORT).show()
         }
 
-        // 全螢幕 HUD 預覽切換
+        // 全螢幕 HUD 預覽切換 (直向專屬滿版駕駛模式，絕對不重疊)
         btnFullscreenPreview.setOnClickListener {
             layoutFullscreenHud.visibility = View.VISIBLE
+            renderPhoneDashboard(fullscreenHolder, NavStateRepository.navState.value)
         }
         btnCloseFullscreen.setOnClickListener {
             layoutFullscreenHud.visibility = View.GONE
@@ -403,7 +277,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 distance = "150公尺",
                 distanceMeters = 150,
                 roadName = "忠孝東路四段",
-                nextAction = "向左轉",
+                nextAction = "向左微轉",
                 currentSpeed = 55,
                 speedLimit = 50,
                 trafficLightState = TrafficLightState.RED,
@@ -559,7 +433,10 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private fun observeNavState() {
         lifecycleScope.launch {
             NavStateRepository.navState.collectLatest { info ->
-                renderPreview(info)
+                renderPhoneDashboard(dashboardHolder, info)
+                if (layoutFullscreenHud.visibility == View.VISIBLE) {
+                    renderPhoneDashboard(fullscreenHolder, info)
+                }
                 renderInspector(info)
             }
         }
@@ -569,6 +446,128 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                     tvNotificationLog.text = logs.takeLast(20).joinToString("\n")
                 }
             }
+        }
+    }
+
+    /**
+     * 渲染手機端專屬直立 HUD 儀表 (絕不重疊)
+     */
+    private fun renderPhoneDashboard(holder: PhoneHudViewHolder, info: NavInfo) {
+        // 1. 頂部狀態標籤
+        holder.tvMapSource.text = if (info.isNavigating) "[${info.mapSource}] 導航中" else "[HUD 就緒] 待機中"
+        holder.tvPowerMode.text = info.powerMode.label
+        holder.tvBattery.text = "${if (info.isCharging) "⚡" else "🔋"} ${info.batteryLevel}%"
+
+        // 2. 轉向箭頭 (優先使用 Google Maps / 高德地圖 原版截取點陣圖！)
+        if (info.isNavigating) {
+            holder.ivManeuver.alpha = 1.0f
+            if (info.customIconBitmap != null) {
+                holder.ivManeuver.setImageBitmap(info.customIconBitmap)
+            } else {
+                holder.ivManeuver.setImageResource(info.maneuver.iconResId)
+            }
+        } else {
+            holder.ivManeuver.setImageResource(R.drawable.ic_arrow_straight)
+            holder.ivManeuver.alpha = 0.35f
+        }
+
+        // 3. 距離與下一動作
+        holder.tvDistance.text = if (info.isNavigating) info.distance else "--"
+        holder.tvNextAction.text = if (info.isNavigating) {
+            info.nextAction ?: info.maneuver.description
+        } else {
+            "等待導航指令"
+        }
+
+        // 4. 道路名稱
+        if (info.isNavigating && !info.roadNumber.isNullOrBlank()) {
+            holder.tvRoadNumber.visibility = View.VISIBLE
+            holder.tvRoadNumber.text = info.roadNumber
+        } else {
+            holder.tvRoadNumber.visibility = View.GONE
+        }
+        holder.tvRoadName.text = if (info.isNavigating) info.roadName else "等待導航開始..."
+
+        // 5. GPS 車速
+        holder.tvSpeedValue.text = info.currentSpeed.toString()
+        if (info.isSpeeding()) {
+            holder.tvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
+        } else {
+            holder.tvSpeedValue.setTextColor(Color.parseColor("#69F0AE"))
+        }
+
+        // 6. 測速照相
+        if (!info.cameraWarning.isNullOrBlank()) {
+            holder.layoutCameraAlert.visibility = View.VISIBLE
+            holder.tvCameraTag.text = info.cameraWarning
+            holder.tvCameraDist.text = "${info.cameraDistance ?: 0}m"
+        } else {
+            holder.layoutCameraAlert.visibility = View.GONE
+        }
+
+        // 7. 車道線 (動態徽章，推薦車道青色高亮)
+        if (info.hasLanes()) {
+            holder.layoutLanes.visibility = View.VISIBLE
+            holder.layoutLanes.removeAllViews()
+            val density = resources.displayMetrics.density
+            val sizePx = (30 * density).toInt()
+            val marginPx = (5 * density).toInt()
+
+            for (lane in info.lanes) {
+                val tv = TextView(this).apply {
+                    val symbol = when (lane.iconType) {
+                        "LEFT" -> "↰"
+                        "RIGHT" -> "↱"
+                        "UTURN" -> "↶"
+                        "STRAIGHT_RIGHT" -> "↑↱"
+                        "STRAIGHT_LEFT" -> "↰↑"
+                        else -> "↑"
+                    }
+                    text = symbol
+                    textSize = 15f
+                    gravity = android.view.Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
+                        marginEnd = marginPx
+                    }
+                    setBackgroundResource(R.drawable.bg_hud_badge)
+                    if (lane.isRecommended) {
+                        background?.mutate()?.setTint(Color.parseColor("#00E5FF"))
+                        setTextColor(Color.parseColor("#000000"))
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    } else {
+                        background?.mutate()?.setTint(Color.parseColor("#22FFFFFF"))
+                        setTextColor(Color.parseColor("#88FFFFFF"))
+                    }
+                }
+                holder.layoutLanes.addView(tv)
+            }
+        } else {
+            holder.layoutLanes.visibility = View.GONE
+        }
+
+        // 8. 紅綠燈倒數
+        if (info.hasTrafficLight()) {
+            holder.layoutTrafficLight.visibility = View.VISIBLE
+            holder.tvTrafficLightSeconds.text = "${info.trafficLightSeconds}s"
+            val color = Color.parseColor(info.trafficLightState.colorHex)
+            holder.tvTrafficLightSeconds.setTextColor(color)
+            holder.viewTrafficLightDot.background.setTint(color)
+            holder.tvTrafficLightLabel.text = when (info.trafficLightState) {
+                TrafficLightState.RED -> "紅燈等待"
+                TrafficLightState.GREEN -> "綠燈通行"
+                TrafficLightState.YELLOW -> "注意減速"
+                else -> ""
+            }
+        } else {
+            holder.layoutTrafficLight.visibility = View.GONE
+        }
+
+        // 9. 行程摘要
+        if (info.remainingTime != "--" || info.remainingDistance != "--") {
+            holder.tvTripSummary.visibility = View.VISIBLE
+            holder.tvTripSummary.text = "剩餘 ${info.remainingTime} · ${info.remainingDistance}"
+        } else {
+            holder.tvTripSummary.visibility = View.GONE
         }
     }
 
@@ -622,269 +621,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         }
     }
 
-    /**
-     * 渲染鏡像預覽 (小窗與全螢幕同步)
-     */
-    private fun renderPreview(info: NavInfo) {
-        // 時速與電量等系統狀態：無論是否導航永遠顯示！
-        renderSingleHudView(
-            info = info,
-            hudContainer = previewHudContainer,
-            ivManeuver = previewIvManeuver,
-            tvDistance = previewTvDistance,
-            tvRoadNumber = previewTvRoadNumber,
-            tvRoadName = previewTvRoadName,
-            layoutNextAction = previewLayoutNextAction,
-            tvNextAction = previewTvNextAction,
-            layoutTripSummary = previewLayoutTripSummary,
-            tvTripSummary = previewTvTripSummary,
-            tvStandbyHint = previewTvStandbyHint,
-            layoutSystemStatus = previewLayoutSystemStatus,
-            tvPowerModeTag = previewTvPowerModeTag,
-            layoutSpeedometer = previewLayoutSpeedometer,
-            tvSpeedValue = previewTvSpeedValue,
-            tvBatteryIcon = previewTvBatteryIcon,
-            tvBatteryLevel = previewTvBatteryLevel,
-            layoutCameraAlert = previewLayoutCameraAlert,
-            tvCameraTag = previewTvCameraTag,
-            tvCameraDistance = previewTvCameraDistance,
-            tvMapSourceTag = previewTvMapSourceTag,
-            layoutProgressTrack = previewLayoutProgressTrack,
-            viewProgressBar = previewViewProgressBar,
-            layoutTrafficLight = previewLayoutTrafficLight,
-            viewTrafficLightDot = previewViewTrafficLightDot,
-            tvTrafficLightSeconds = previewTvTrafficLightSeconds,
-            tvTrafficLightLabel = previewTvTrafficLightLabel,
-            layoutLaneGuidance = previewLayoutLaneGuidance,
-            layoutLanesContainer = previewLayoutLanesContainer,
-            layoutTrafficBarContainer = previewLayoutTrafficBarContainer,
-            layoutTrafficBarSegments = previewLayoutTrafficBarSegments,
-            tvVehicleProgressMarker = previewTvVehicleProgressMarker
-        )
-
-        // 全螢幕 HUD 同步渲染
-        if (layoutFullscreenHud.visibility == View.VISIBLE) {
-            renderSingleHudView(
-                info = info,
-                hudContainer = fullHudContainer,
-                ivManeuver = fullIvManeuver,
-                tvDistance = fullTvDistance,
-                tvRoadNumber = fullTvRoadNumber,
-                tvRoadName = fullTvRoadName,
-                layoutNextAction = fullLayoutNextAction,
-                tvNextAction = fullTvNextAction,
-                layoutTripSummary = fullLayoutTripSummary,
-                tvTripSummary = fullTvTripSummary,
-                tvStandbyHint = fullTvStandbyHint,
-                layoutSystemStatus = fullLayoutSystemStatus,
-                tvPowerModeTag = fullTvPowerModeTag,
-                layoutSpeedometer = fullLayoutSpeedometer,
-                tvSpeedValue = fullTvSpeedValue,
-                tvBatteryIcon = fullTvBatteryIcon,
-                tvBatteryLevel = fullTvBatteryLevel,
-                layoutCameraAlert = fullLayoutCameraAlert,
-                tvCameraTag = fullTvCameraTag,
-                tvCameraDistance = fullTvCameraDistance,
-                tvMapSourceTag = fullTvMapSourceTag,
-                layoutProgressTrack = fullLayoutProgressTrack,
-                viewProgressBar = fullViewProgressBar,
-                layoutTrafficLight = fullLayoutTrafficLight,
-                viewTrafficLightDot = fullViewTrafficLightDot,
-                tvTrafficLightSeconds = fullTvTrafficLightSeconds,
-                tvTrafficLightLabel = fullTvTrafficLightLabel,
-                layoutLaneGuidance = fullLayoutLaneGuidance,
-                layoutLanesContainer = fullLayoutLanesContainer,
-                layoutTrafficBarContainer = fullLayoutTrafficBarContainer,
-                layoutTrafficBarSegments = fullLayoutTrafficBarSegments,
-                tvVehicleProgressMarker = fullTvVehicleProgressMarker
-            )
-        }
-    }
-
-    private fun renderSingleHudView(
-        info: NavInfo,
-        hudContainer: LinearLayout,
-        ivManeuver: ImageView,
-        tvDistance: TextView,
-        tvRoadNumber: TextView,
-        tvRoadName: TextView,
-        layoutNextAction: LinearLayout,
-        tvNextAction: TextView,
-        layoutTripSummary: LinearLayout,
-        tvTripSummary: TextView,
-        tvStandbyHint: TextView,
-        layoutSystemStatus: LinearLayout,
-        tvPowerModeTag: TextView,
-        layoutSpeedometer: LinearLayout,
-        tvSpeedValue: TextView,
-        tvBatteryIcon: TextView,
-        tvBatteryLevel: TextView,
-        layoutCameraAlert: LinearLayout,
-        tvCameraTag: TextView,
-        tvCameraDistance: TextView,
-        tvMapSourceTag: TextView,
-        layoutProgressTrack: View,
-        viewProgressBar: View,
-        layoutTrafficLight: LinearLayout,
-        viewTrafficLightDot: View,
-        tvTrafficLightSeconds: TextView,
-        tvTrafficLightLabel: TextView,
-        layoutLaneGuidance: LinearLayout,
-        layoutLanesContainer: LinearLayout,
-        layoutTrafficBarContainer: View,
-        layoutTrafficBarSegments: LinearLayout,
-        tvVehicleProgressMarker: TextView
-    ) {
-        layoutSpeedometer.visibility = View.VISIBLE
-        layoutSystemStatus.visibility = View.VISIBLE
-        hudContainer.visibility = View.VISIBLE
-
-        // 電池與省電
-        tvBatteryIcon.text = if (info.isCharging) "⚡" else "🔋"
-        tvBatteryLevel.text = "${info.batteryLevel}%"
-        tvPowerModeTag.text = if (info.isNavigating) "[${info.mapSource}] ${info.powerMode.label}" else "[HUD 就緒] ${info.powerMode.label}"
-
-        // 96sp GPS 車速
-        tvSpeedValue.text = info.currentSpeed.toString()
-        if (info.isSpeeding()) {
-            tvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_amber))
-        } else {
-            tvSpeedValue.setTextColor(ContextCompat.getColor(this, R.color.hud_accent_cyan))
-        }
-
-        // 紅綠燈倒數
-        if (info.hasTrafficLight()) {
-            layoutTrafficLight.visibility = View.VISIBLE
-            tvTrafficLightSeconds.text = "${info.trafficLightSeconds}s"
-            val color = Color.parseColor(info.trafficLightState.colorHex)
-            tvTrafficLightSeconds.setTextColor(color)
-            viewTrafficLightDot.background.setTint(color)
-            tvTrafficLightLabel.text = when (info.trafficLightState) {
-                TrafficLightState.RED -> "紅燈等待"
-                TrafficLightState.GREEN -> "綠燈通行"
-                TrafficLightState.YELLOW -> "注意減速"
-                else -> ""
-            }
-        } else {
-            layoutTrafficLight.visibility = View.GONE
-        }
-
-        // 測速照相
-        if (!info.cameraWarning.isNullOrBlank()) {
-            tvCameraTag.text = info.cameraWarning
-            tvCameraDistance.text = "${info.cameraDistance ?: 0}m"
-            layoutCameraAlert.visibility = View.VISIBLE
-        } else {
-            layoutCameraAlert.visibility = View.GONE
-        }
-
-        // 導航中 vs 待命中
-        if (info.isNavigating) {
-            tvStandbyHint.visibility = View.GONE
-            ivManeuver.alpha = 1.0f
-            if (info.customIconBitmap != null) {
-                ivManeuver.setImageBitmap(info.customIconBitmap)
-            } else {
-                ivManeuver.setImageResource(info.maneuver.iconResId)
-            }
-            tvDistance.text = info.distance
-            tvRoadName.text = info.roadName
-
-            if (!info.roadNumber.isNullOrBlank()) {
-                tvRoadNumber.text = info.roadNumber
-                tvRoadNumber.visibility = View.VISIBLE
-            } else {
-                tvRoadNumber.visibility = View.GONE
-            }
-
-            if (!info.nextAction.isNullOrBlank()) {
-                tvNextAction.text = info.nextAction
-                layoutNextAction.visibility = View.VISIBLE
-            } else {
-                layoutNextAction.visibility = View.GONE
-            }
-
-            if (info.remainingTime != "--" || info.remainingDistance != "--") {
-                tvTripSummary.text = "${info.remainingTime} · ${info.remainingDistance}"
-                layoutTripSummary.visibility = View.VISIBLE
-            } else {
-                layoutTripSummary.visibility = View.GONE
-            }
-
-            // 車道線
-            if (info.hasLanes()) {
-                layoutLaneGuidance.visibility = View.VISIBLE
-                layoutLanesContainer.removeAllViews()
-                val density = resources.displayMetrics.density
-                val sizePx = (32 * density).toInt()
-                val marginPx = (6 * density).toInt()
-
-                for (lane in info.lanes) {
-                    val tv = TextView(this).apply {
-                        val symbol = when (lane.iconType) {
-                            "LEFT" -> "↰"
-                            "RIGHT" -> "↱"
-                            "UTURN" -> "↶"
-                            "STRAIGHT_RIGHT" -> "↑↱"
-                            "STRAIGHT_LEFT" -> "↰↑"
-                            else -> "↑"
-                        }
-                        text = symbol
-                        textSize = 17f
-                        gravity = android.view.Gravity.CENTER
-                        val lp = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-                            marginEnd = marginPx
-                        }
-                        layoutParams = lp
-                        setBackgroundResource(R.drawable.bg_hud_badge)
-                        if (lane.isRecommended) {
-                            background?.mutate()?.setTint(Color.parseColor("#00E5FF"))
-                            setTextColor(Color.parseColor("#000000"))
-                            typeface = android.graphics.Typeface.DEFAULT_BOLD
-                        } else {
-                            background?.mutate()?.setTint(Color.parseColor("#22FFFFFF"))
-                            setTextColor(Color.parseColor("#88FFFFFF"))
-                        }
-                    }
-                    layoutLanesContainer.addView(tv)
-                }
-            } else {
-                layoutLaneGuidance.visibility = View.GONE
-            }
-
-            // 垂直路況光柱
-            if (info.hasTrafficSegments()) {
-                layoutTrafficBarContainer.visibility = View.VISIBLE
-                layoutTrafficBarSegments.removeAllViews()
-                for (seg in info.trafficSegments) {
-                    val v = View(this)
-                    val lp = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        seg.weight
-                    )
-                    v.layoutParams = lp
-                    v.setBackgroundColor(Color.parseColor(seg.colorHex))
-                    layoutTrafficBarSegments.addView(v)
-                }
-            } else {
-                layoutTrafficBarContainer.visibility = View.GONE
-            }
-        } else {
-            // 待命狀態：保持基本儀表可見，顯示直行預設與待命提示
-            ivManeuver.setImageResource(R.drawable.ic_arrow_straight)
-            ivManeuver.alpha = 0.35f
-            tvDistance.text = "--"
-            tvRoadName.text = "等待導航開始..."
-            tvRoadNumber.visibility = View.GONE
-            layoutNextAction.visibility = View.GONE
-            layoutTripSummary.visibility = View.GONE
-            layoutLaneGuidance.visibility = View.GONE
-            layoutTrafficBarContainer.visibility = View.GONE
-            tvStandbyHint.visibility = View.VISIBLE
-        }
-    }
-
     override fun onBackPressed() {
         if (layoutFullscreenHud.visibility == View.VISIBLE) {
             layoutFullscreenHud.visibility = View.GONE
@@ -907,5 +643,30 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 android.content.res.ColorStateList.valueOf(Color.parseColor("#FF5252"))
             tvGlassesStatus.setText(R.string.glasses_disconnected)
         }
+    }
+
+    /**
+     * 手機直向 HUD 儀表 ViewHolder
+     */
+    class PhoneHudViewHolder(val root: View) {
+        val tvMapSource: TextView = root.findViewById(R.id.phoneTvMapSource)
+        val tvPowerMode: TextView = root.findViewById(R.id.phoneTvPowerMode)
+        val tvBattery: TextView = root.findViewById(R.id.phoneTvBattery)
+        val ivManeuver: ImageView = root.findViewById(R.id.phoneIvManeuver)
+        val tvDistance: TextView = root.findViewById(R.id.phoneTvDistance)
+        val tvNextAction: TextView = root.findViewById(R.id.phoneTvNextAction)
+        val tvRoadNumber: TextView = root.findViewById(R.id.phoneTvRoadNumber)
+        val tvRoadName: TextView = root.findViewById(R.id.phoneTvRoadName)
+        val tvSpeedValue: TextView = root.findViewById(R.id.phoneTvSpeedValue)
+        val tvSpeedUnit: TextView = root.findViewById(R.id.phoneTvSpeedUnit)
+        val layoutCameraAlert: View = root.findViewById(R.id.phoneLayoutCameraAlert)
+        val tvCameraTag: TextView = root.findViewById(R.id.phoneTvCameraTag)
+        val tvCameraDist: TextView = root.findViewById(R.id.phoneTvCameraDist)
+        val layoutLanes: LinearLayout = root.findViewById(R.id.phoneLayoutLanes)
+        val layoutTrafficLight: View = root.findViewById(R.id.phoneLayoutTrafficLight)
+        val viewTrafficLightDot: View = root.findViewById(R.id.phoneViewTrafficLightDot)
+        val tvTrafficLightSeconds: TextView = root.findViewById(R.id.phoneTvTrafficLightSeconds)
+        val tvTrafficLightLabel: TextView = root.findViewById(R.id.phoneTvTrafficLightLabel)
+        val tvTripSummary: TextView = root.findViewById(R.id.phoneTvTripSummary)
     }
 }

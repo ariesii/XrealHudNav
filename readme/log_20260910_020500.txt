@@ -1,0 +1,82 @@
+================================================================================
+Antigravity 操作與學習日誌 (Operation & Learning Log)
+時間戳記：20260910_020500
+專案名稱：XrealHudNav
+核心任務：在不影響 XREAL 眼鏡輸出的前提下，為手機端打造專屬直向 HUD 儀表板，徹底根絕文字與時速重疊問題
+================================================================================
+
+【一、 問題背景與分析 (Problem Background & Analysis)】
+1. 使用者回報截圖與需求：
+   - 使用者在手機主畫面的「HUD 即時鏡像預覽」及「全螢幕 HUD 模式」中發現：
+     文字（如路名「等待導航開始...」）、時速數字（「6 km/h」）、距離（「--」）與電量文字擠在同一行，互相重疊打架，畫面極度雜亂無法閱讀。
+   - 使用者明確要求：
+     「在不影響眼鏡輸出畫面的情況之下，請幫我在手機上也可以完整的獲取這些訊息，因為目前看到的全螢幕的顯示事實上是會疊加跟不清楚的，我希望在不戴眼鏡的時候也可以清楚的獲得這些資訊。」
+
+2. 根源技術原因分析：
+   - 外接 XREAL Air 2 Pro 眼鏡螢幕規格為 1920x1080 (16:9) 超寬橫向空間，原本的 presentation_xreal_hud.xml 設計將「導航轉向/路名」置於最左側，而「GPS 車速/電量/測速照相」置於最右側，兩者橫向間隔超過 1000 像素，在眼鏡視場中非常自然完美。
+   - 但手機螢幕通常是直向持握（Portrait，寬度僅約 360dp ~ 412dp），如果手機端也直接 include 原本的 1080p 橫向佈局，左右兩端的巨大字體（50sp 路名與 96sp 車速）在有限的直螢幕寬度下必然會在中央迎面相撞、發生嚴重的層次重疊。
+
+3. 最佳架構解決方案：
+   - 保持外接眼鏡 Presentation 顯示 100% 不變：外接眼鏡依然使用 presentation_xreal_hud.xml，維持最寬闊的雙眼 HUD 視界，不受任何改動影響。
+   - 為手機端獨立設計專屬直向儀表佈局：view_phone_hud_dashboard.xml
+     將資訊重新梳理為 5 個垂直層次：
+     * 第 1 層：頂部狀態列（地圖訊號來源膠囊、省電模式、即時電量）。
+     * 第 2 層：核心轉向與距離動作區（左側 96dp 轉向圖標 + 右側 38sp 大距離與動作說明，左右並列、絕不重疊）。
+     * 第 3 層：道路名稱橫幅橫條（22sp 道路名清晰獨立呈現）。
+     * 第 4 層：即時 GPS 車速與測速相機提醒列（左側 50sp 綠色大數字車速 + 右側測速照相膠囊）。
+     * 第 5 層：動態車道線引導與紅綠燈倒數秒數膠囊（🔴 24s）。
+   - 手機端主畫面預覽視窗 (previewWindow) 與全螢幕視窗 (layoutFullscreenHud) 全面接入此直向儀表，透過 PhoneHudViewHolder 統一雙向綁定。
+
+--------------------------------------------------------------------------------
+【二、 執行的檔案異動與操作指令 (File Modifications & Commands)】
+
+1. 檔案備份操作（依據個人偏好規則：修改前先備份）：
+   - 備份路徑：
+     c:\AI_project\XrealAPK\backup\activity_main_20260910_020500.xml.bak
+     c:\AI_project\XrealAPK\backup\MainActivity_20260910_020500.kt.bak
+
+2. 新增與修改之檔案：
+   (1) [NEW] app/src/main/res/layout/view_phone_hud_dashboard.xml
+       - 手機直立專屬 HUD 儀表板版面，採用 LinearLayout 垂直流暢佈局，元件層次分明，消滅所有文字重疊。
+   (2) [MODIFY] app/src/main/res/layout/activity_main.xml
+       - previewWindow 內 include 改為 view_phone_hud_dashboard。
+       - layoutFullscreenHud 內 include 改為 view_phone_hud_dashboard。
+   (3) [MODIFY] app/src/main/java/com/xreal/hudnav/MainActivity.kt
+       - 移除冗長瑣碎的手機元件綁定，加入 PhoneHudViewHolder 結構。
+       - updatePhoneDashboard() 同步更新預覽卡片與全螢幕儀表，支援高德/Google Maps 雙來源。
+   (4) [PRESERVED] app/src/main/res/layout/presentation_xreal_hud.xml
+       - 完全保留未修改，確保外接 XREAL 眼鏡輸出保持最高畫質橫向 1080p 體驗！
+
+3. Git 與 GitHub Actions 操作指令：
+   # 檢查工作區狀態
+   git status -s
+
+   # 加入追蹤檔案
+   git add app/src/main/res/layout/view_phone_hud_dashboard.xml
+   git add app/src/main/res/layout/activity_main.xml
+   git add app/src/main/java/com/xreal/hudnav/MainActivity.kt
+   git add backup/
+   git add readme/
+
+   # 建立 Git 提交（繁體中文台灣用語）
+   git commit -m "feat: 獨立手機端直向專用 HUD 導航儀表，徹底解決字體重疊問題"
+
+   # 推送至遠端 GitHub
+   git push origin main
+
+   # 監控 GitHub Actions 雲端編譯
+   gh run list --limit 2
+   gh run watch <Run_ID>
+
+   # 下載最新生成的 debug APK
+   gh run download <Run_ID> --dir release-apk
+
+--------------------------------------------------------------------------------
+【三、 成果驗證重點 (Verification & Testing Guide)】
+1. 手機端首頁預覽卡片：
+   - 顯示垂直分層之精美儀表，頂部狀態、轉向圖標、道路名稱、車速、車道線與紅綠燈皆清楚獨立，字體不再相撞。
+2. 點擊「⛶ 全螢幕模擬」按鈕：
+   - 手機立即進入沉浸式純黑直向 HUD 儀表介面，字體巨大且清晰，適合直接將手機置於車輛儀表板或前擋手機架導航使用。
+3. 外接 XREAL Air 2 Pro 眼鏡驗證：
+   - 眼鏡插入 USB-C 後，啟動 Presentation 模式，顯示原本的 1920x1080 橫向超寬 HUD，左側轉向、右側時速，完美如初。
+================================================================================

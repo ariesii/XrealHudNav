@@ -1,0 +1,13 @@
+# 任務狀態記錄 (Task Record)
+時間戳記：20260910_020500
+專案：XrealHudNav
+
+## 核心任務清單
+- [x] 備份現有 `activity_main.xml` 與 `MainActivity.kt` 至 `backup/` 目錄
+- [x] 建立手機直立專用 HUD 導航佈局 `view_phone_hud_dashboard.xml`
+- [x] 更新 `activity_main.xml` 將主畫面預覽與全螢幕容器切換為直立儀表
+- [x] 保留外接眼鏡 `presentation_xreal_hud.xml` 完全不動，確保眼鏡端 1080p 超寬 HUD 零影響
+- [x] 重構 `MainActivity.kt` 加入 `PhoneHudViewHolder` 統一管理直向儀表渲染
+- [x] 產出繁體中文學習日誌與紀錄文件 (txt 與 html)
+- [ ] 執行 git commit 與 push
+- [ ] 監控 GitHub Actions 構建並下載最新 APK 至 release-apk/
