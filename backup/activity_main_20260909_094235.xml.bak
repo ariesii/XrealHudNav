@@ -176,14 +176,6 @@
                         android:text="等待通知或廣播封包流入..."
                         android:textColor="#00E5FF"
                         android:textSize="11sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="💡 提示：若高德僅顯示「正在導航」，請至高德設置 -> 導航設置 -> 輔助功能，開啟「車載藍牙/導航廣播」與「狀態欄常駐導航詳情」"
-                        android:textColor="#FFCC00"
-                        android:textSize="11sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

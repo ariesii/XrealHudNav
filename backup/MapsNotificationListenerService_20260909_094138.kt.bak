@@ -140,36 +140,13 @@ class MapsNotificationListenerService : NotificationListenerService() {
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
         val ticker = notification.tickerText?.toString().orEmpty()
 
-        // 深度提取：掃描 RemoteViews (contentView, bigContentView, headsUpContentView) 與 Extras 所有字串
-        val remoteViewData = extractRemoteViewsData(notification)
-        val allExtractedTexts = mutableListOf<String>()
-
-        // 收集 Extras 內部所有文字
-        for (key in extras.keySet()) {
-            val v = extras.get(key)
-            if (v is CharSequence && v.isNotBlank()) {
-                allExtractedTexts.add(v.toString().trim())
-            } else if (v is Array<*> && v.isArrayOf<CharSequence>()) {
-                for (item in v) {
-                    if (item is CharSequence && item.isNotBlank()) allExtractedTexts.add(item.toString().trim())
-                }
-            }
-        }
-
-        allExtractedTexts.addAll(remoteViewData.texts)
-        val distinctTexts = allExtractedTexts.distinct().filter { 
-            it.isNotBlank() && it != "高德地圖" && it != "正在導航" && it != "導航中"
-        }
-
-        val logEntry = if (distinctTexts.isNotEmpty()) {
-            "[$mapSourceName] 抓取: " + distinctTexts.joinToString(" | ")
-        } else {
-            "[$mapSourceName] $title | $text"
-        }
+        val logEntry = "[$mapSourceName] $title | $text"
         Log.d(TAG, logEntry)
         NavStateRepository.appendNotificationLog(logEntry)
 
-        parseAndPostNavData(mapSourceName, title, text, subText, ticker, distinctTexts, remoteViewData.firstBitmap, notification)
+        if (title.isBlank() && text.isBlank()) return
+
+        parseAndPostNavData(mapSourceName, title, text, subText, ticker, notification)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -186,190 +163,66 @@ class MapsNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    data class RemoteViewExtractResult(
-        val texts: List<String>,
-        val firstBitmap: Bitmap?
-    )
-
-    private fun extractRemoteViewsData(notification: Notification): RemoteViewExtractResult {
-        val texts = mutableListOf<String>()
-        var foundBitmap: Bitmap? = null
-
-        val rvs = listOfNotNull(
-            notification.bigContentView,
-            notification.contentView,
-            notification.headsUpContentView
-        )
-
-        for (rv in rvs) {
-            try {
-                val dummyParent = android.widget.FrameLayout(applicationContext)
-                val inflated = rv.apply(applicationContext, dummyParent)
-                extractViewsRecursive(inflated, texts) { bmp ->
-                    if (foundBitmap == null) foundBitmap = bmp
-                }
-            } catch (e: Exception) {
-                // 若 apply 失敗，反射讀取 Action
-                extractViaReflection(rv, texts)
-            }
-        }
-
-        return RemoteViewExtractResult(texts.distinct(), foundBitmap)
-    }
-
-    private fun extractViewsRecursive(view: android.view.View, texts: MutableList<String>, onBitmapFound: (Bitmap) -> Unit) {
-        if (view is android.widget.TextView) {
-            val str = view.text?.toString()?.trim()
-            if (!str.isNullOrBlank()) {
-                texts.add(str)
-            }
-        } else if (view is android.widget.ImageView) {
-            val d = view.drawable
-            if (d is BitmapDrawable && d.bitmap != null) {
-                onBitmapFound(d.bitmap)
-            }
-        } else if (view is android.view.ViewGroup) {
-            for (i in 0 until view.childCount) {
-                extractViewsRecursive(view.getChildAt(i), texts, onBitmapFound)
-            }
-        }
-    }
-
-    private fun extractViaReflection(rv: android.widget.RemoteViews, texts: MutableList<String>) {
-        try {
-            val field = rv.javaClass.getDeclaredField("mActions")
-            field.isAccessible = true
-            val actions = field.get(rv) as? java.util.ArrayList<*> ?: return
-            for (action in actions) {
-                if (action == null) continue
-                for (f in action.javaClass.declaredFields) {
-                    f.isAccessible = true
-                    val v = f.get(action)
-                    if (v is CharSequence && v.isNotBlank()) {
-                        texts.add(v.toString().trim())
-                    }
-                }
-            }
-        } catch (_: Exception) {}
-    }
-
     private fun parseAndPostNavData(
         source: String,
         title: String,
         text: String,
         subText: String,
         ticker: String,
-        extractedTexts: List<String>,
-        rvBitmap: Bitmap?,
         notification: Notification
     ) {
-        val fullContentBuilder = StringBuilder()
-        fullContentBuilder.append(title).append(" ").append(subText).append(" ").append(text).append(" ").append(ticker)
-        for (str in extractedTexts) {
-            fullContentBuilder.append(" ").append(str)
-        }
-        val fullContent = fullContentBuilder.toString()
+        val fullContent = "$title $subText $text $ticker"
 
-        // 1. 推斷轉向動作（結合文字分析與圖標特徵分析）
+        // 1. 推斷轉向動作（結合文字分析與 LargeIcon 特徵分析）
         var maneuver = ManeuverType.fromText(fullContent)
 
-        // 優先從提取的短句逐一判定轉向，避免長字串干擾
-        for (item in extractedTexts) {
-            val m = ManeuverType.fromText(item)
-            if (m != ManeuverType.UNKNOWN && m != ManeuverType.STRAIGHT) {
-                maneuver = m
-                break
-            }
-        }
-
-        // 如果仍為未知或直行，嘗試透過 RemoteViews 或 Notification 的 Bitmap 做重心判定
+        // 如果文字判斷為直行或未知，但這是高德地圖，嘗試透過 Notification 圖標視覺分析左右轉
         if (maneuver == ManeuverType.STRAIGHT || maneuver == ManeuverType.UNKNOWN) {
-            val targetBmp = rvBitmap ?: extractBitmapFromNotification(notification)
-            if (targetBmp != null) {
-                val iconManeuver = analyzeBitmapDirection(targetBmp)
-                if (iconManeuver != null) {
-                    maneuver = iconManeuver
-                    Log.i(TAG, "透過圖標視覺重心成功識別轉向: ${maneuver.description}")
-                }
+            val iconManeuver = analyzeNotificationIcon(notification)
+            if (iconManeuver != null) {
+                maneuver = iconManeuver
+                Log.i(TAG, "透過 Notification 圖標成功識別轉向: ${maneuver.description}")
             }
         }
 
-        // 2. 擷取距離字串與公尺 (優先從 extractedTexts 找，如「48米」、「150m」)
+        // 2. 擷取距離字串與公尺
         var distanceStr = ""
         var distanceMeters = 1000
-
-        for (item in extractedTexts) {
-            val matcher = DISTANCE_PATTERN.matcher(item)
-            if (matcher.find()) {
-                distanceStr = matcher.group(1).orEmpty()
-                distanceMeters = parseDistanceToMeters(distanceStr)
-                break
-            }
-        }
-
-        if (distanceStr.isBlank()) {
-            val distMatcher = DISTANCE_PATTERN.matcher(fullContent)
-            if (distMatcher.find()) {
-                distanceStr = distMatcher.group(1).orEmpty()
-                distanceMeters = parseDistanceToMeters(distanceStr)
-            }
+        val distMatcher = DISTANCE_PATTERN.matcher(title.ifBlank { text })
+        if (distMatcher.find()) {
+            distanceStr = distMatcher.group(1).orEmpty()
+            distanceMeters = parseDistanceToMeters(distanceStr)
         }
 
         // 3. 擷取道路編號與名稱
         var roadNum: String? = null
-        val numMatcher = ROAD_NUM_PATTERN.matcher(fullContent)
+        val numMatcher = ROAD_NUM_PATTERN.matcher(title)
         if (numMatcher.find()) {
             roadNum = numMatcher.group(1)
         }
 
-        // 從提取的文字中挑選最像路名的字串（長度 2~12，包含「路」、「街」、「道」、「橋」、「巷」或進入/前往之後的詞）
-        var cleanRoadName = ""
-        for (item in extractedTexts) {
-            val candidate = item
-                .replace("前往", "")
-                .replace("進入", "")
-                .replace("直行", "")
-                .replace("左轉", "")
-                .replace("右轉", "")
-                .replace("沿", "")
-                .replace("行駛", "")
-                .replace(distanceStr, "")
-                .trim()
-            if (candidate.isNotBlank() && candidate.length in 2..15) {
-                if (candidate.contains("路") || candidate.contains("街") || candidate.contains("道") || 
-                    candidate.contains("橋") || candidate.contains("高架") || candidate.contains("大道")) {
-                    cleanRoadName = candidate
-                    break
-                }
-            }
-        }
+        var cleanRoadName = title
+            .replace("前往", "")
+            .replace("進入", "")
+            .replace("直行", "")
+            .replace("左轉", "")
+            .replace("右轉", "")
+            .replace("沿", "")
+            .replace("行駛", "")
+            .replace(distanceStr, "")
+            .trim()
 
+        if (roadNum != null) {
+            cleanRoadName = cleanRoadName.replace(roadNum, "").trim()
+        }
         if (cleanRoadName.isBlank()) {
-            for (item in extractedTexts) {
-                val candidate = item.replace(distanceStr, "").trim()
-                if (candidate.isNotBlank() && candidate.length in 2..12 && !candidate.contains("分鐘") && !candidate.contains("公里")) {
-                    cleanRoadName = candidate
-                    break
-                }
-            }
+            cleanRoadName = if (roadNum != null) "$roadNum 道路" else title
         }
 
-        if (cleanRoadName.isBlank()) {
-            cleanRoadName = if (roadNum != null) "$roadNum 道路" else "導航行駛中"
-        }
-
-        // 4. 解析次要提示（如警示、接下來動作）
-        var nextAction: String? = null
-        for (item in extractedTexts) {
-            if (item.contains("謹慎") || item.contains("注意") || item.contains("前方") || item.contains("經過")) {
-                nextAction = item
-                break
-            }
-        }
-
-        // 5. 解析紅綠燈秒數資訊
+        // 4. 解析紅綠燈秒數資訊 (例如 "紅燈 24秒" / "綠燈 12s")
         var trafficLightState = TrafficLightState.NONE
         var trafficLightSeconds: Int? = null
+
         val tlMatcher = TRAFFIC_LIGHT_PATTERN.matcher(fullContent)
         if (tlMatcher.find()) {
             val stateStr = tlMatcher.group(1).orEmpty()
@@ -383,21 +236,16 @@ class MapsNotificationListenerService : NotificationListenerService() {
                     stateStr.contains("黃") -> TrafficLightState.YELLOW
                     else -> TrafficLightState.RED
                 }
+                Log.i(TAG, "偵測到路口智慧紅綠燈 -> 狀態: ${trafficLightState.label}, 秒數: ${secs}s")
             }
         }
 
-        // 6. 解析剩餘行程資訊 (如 28分鐘 · 10.6公里)
+        // 5. 解析剩餘行程資訊
         var remainingTime = "--"
         var remainingDistance = "--"
         var eta = "--:--"
-        for (item in extractedTexts) {
-            if (item.contains("分") || item.contains("時") || item.contains("小時")) {
-                remainingTime = item
-            } else if (item.contains("公里") || item.contains("km")) {
-                remainingDistance = item
-            }
-        }
-        if (text.isNotBlank() && (remainingTime == "--" || remainingDistance == "--")) {
+
+        if (text.isNotBlank()) {
             val parts = text.split("·", "-", "•", ",").map { it.trim() }
             if (parts.isNotEmpty()) remainingTime = parts[0]
             if (parts.size > 1) remainingDistance = parts[1]
@@ -418,7 +266,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
             distanceMeters = distanceMeters,
             roadNumber = roadNum,
             roadName = cleanRoadName,
-            nextAction = nextAction ?: if (subText.isNotBlank()) subText else null,
+            nextAction = if (subText.isNotBlank()) subText else null,
             eta = eta,
             remainingTime = remainingTime,
             remainingDistance = remainingDistance,
@@ -436,57 +284,6 @@ class MapsNotificationListenerService : NotificationListenerService() {
         )
 
         NavStateRepository.updateNavInfo(navInfo)
-    }
-
-    private fun extractBitmapFromNotification(notification: Notification): Bitmap? {
-        return try {
-            val icon = notification.getLargeIcon() ?: return null
-            val drawable = icon.loadDrawable(this) ?: return null
-            if (drawable is BitmapDrawable) {
-                drawable.bitmap
-            } else {
-                val bmp = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
-                val canvas = android.graphics.Canvas(bmp)
-                drawable.setBounds(0, 0, 32, 32)
-                drawable.draw(canvas)
-                bmp
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun analyzeBitmapDirection(bitmap: Bitmap): ManeuverType? {
-        return try {
-            val width = bitmap.width
-            val height = bitmap.height
-            var leftLum = 0L
-            var rightLum = 0L
-
-            for (y in 0 until height) {
-                for (x in 0 until width) {
-                    val pixel = bitmap.getPixel(x, y)
-                    val alpha = (pixel shr 24) and 0xFF
-                    val red = (pixel shr 16) and 0xFF
-                    val green = (pixel shr 8) and 0xFF
-                    val blue = pixel and 0xFF
-                    val lum = (red + green + blue) * alpha / 255
-
-                    if (x < width / 2) {
-                        leftLum += lum
-                    } else if (x > width / 2) {
-                        rightLum += lum
-                    }
-                }
-            }
-
-            when {
-                rightLum > leftLum * 1.35 -> ManeuverType.TURN_RIGHT
-                leftLum > rightLum * 1.35 -> ManeuverType.TURN_LEFT
-                else -> null
-            }
-        } catch (_: Exception) {
-            null
     }
 
     private fun buildLanesForManeuver(maneuver: ManeuverType): List<com.xreal.hudnav.model.LaneItem> {

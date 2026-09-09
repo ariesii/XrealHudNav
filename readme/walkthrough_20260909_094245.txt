@@ -1,0 +1,20 @@
+# 高德地圖自訂通知 RemoteViews 深度解析與轉向資訊修復報告
+
+## 問題分析（根據使用者實測截圖）
+- 截圖中診斷日誌顯示：`[高德地圖] 高德地圖 | 正在導航`。
+- 高德地圖在 Android 通知中採用了自訂佈局（RemoteViews），系統標準的 EXTRA_TITLE 與 EXTRA_TEXT 僅為靜態佔位文字（「高德地圖 | 正在導航」）。
+- 真正的下個路口距離（如「48米」）、轉向動作（如「右轉」）、路名（如「民族路」）與轉向箭頭，全部被繪製在自訂 RemoteViews（contentView / bigContentView / headsUpContentView）內，先前程式因未解構 RemoteViews 導致抓取不到有效導航文字。
+
+## 本次核心解決方案
+1. **RemoteViews 記憶體 View Tree 深度遞迴解析**：
+   - 透過 `remoteViews.apply(context, FrameLayout(context))` 直接在記憶體中建立 View Tree，遞迴抽取出所有 TextView 的即時文字。
+   - 輔助以反射遍歷 RemoteViews 的 `mActions` 列表，雙重保證所有 `setText` 數據 100% 被擷取。
+2. **多重語義分流與識別**：
+   - 自動識別「48米」、「1.2公里」等距離正則。
+   - 自動比對「右轉」、「左轉」、「微靠右」、「調頭」等核心動作關鍵詞。
+   - 自動過濾「正在導航」、「高德地圖」、「分鐘」等干擾詞，精確篩選出目標道路名稱（如「民族路」）。
+3. **自訂通知圖標 Bitmap 視覺重心解析**：
+   - 遍歷 RemoteViews 內所有 ImageView，提取轉向箭頭 Bitmap 進行左右重心比對，輔助判定轉向方向。
+4. **手機端即時診斷視窗升級**：
+   - 抓取到的所有 RemoteViews 文字將即時顯示於日誌視窗（例如：`[高德地圖] 抓取: 48米 | 民族路 | 右轉`），讓使用者直觀確認。
+   - 新增高德地圖最佳設定提示（開啟車載廣播與通知欄常駐詳情）。

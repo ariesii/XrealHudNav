@@ -1,0 +1,11 @@
+# 任務進度清單 (Task List) - 20260909_094245
+
+- [x] 分析實測截圖中「高德地圖 | 正在導航」純標題問題
+- [x] 實作 RemoteViews 記憶體 View Tree 遞迴文字提取引擎
+- [x] 實作 RemoteViews mActions 反射備援機制
+- [x] 實作 RemoteViews ImageView Bitmap 提取與左右重心分析
+- [x] 升級文字語義分析器 (優先從提取字串辨別距離、轉向、路名)
+- [x] 手機介面診斷日誌強化與高德地圖設定提示
+- [x] 本地檔案備份至 backup/
+- [x] 繁體中文台灣用語文件存至 readme/
+- [x] 提交至 GitHub 觸發 CI/CD 線上編譯最新 APK
