@@ -487,7 +487,6 @@ class MapsNotificationListenerService : NotificationListenerService() {
             }
         } catch (_: Exception) {
             null
-        }
     }
 
     private fun buildLanesForManeuver(maneuver: ManeuverType): List<com.xreal.hudnav.model.LaneItem> {
