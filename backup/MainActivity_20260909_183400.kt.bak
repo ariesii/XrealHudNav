@@ -811,38 +811,24 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             if (info.hasLanes()) {
                 layoutLaneGuidance.visibility = View.VISIBLE
                 layoutLanesContainer.removeAllViews()
-                val density = resources.displayMetrics.density
-                val sizePx = (32 * density).toInt()
-                val marginPx = (6 * density).toInt()
-
                 for (lane in info.lanes) {
-                    val tv = TextView(this).apply {
-                        val symbol = when (lane.iconType) {
-                            "LEFT" -> "↰"
-                            "RIGHT" -> "↱"
-                            "UTURN" -> "↶"
-                            "STRAIGHT_RIGHT" -> "↑↱"
-                            "STRAIGHT_LEFT" -> "↰↑"
-                            else -> "↑"
-                        }
-                        text = symbol
-                        textSize = 17f
-                        gravity = android.view.Gravity.CENTER
-                        val lp = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-                            marginEnd = marginPx
-                        }
-                        layoutParams = lp
-                        setBackgroundResource(R.drawable.bg_hud_badge)
-                        if (lane.isRecommended) {
-                            background?.mutate()?.setTint(Color.parseColor("#00E5FF"))
-                            setTextColor(Color.parseColor("#000000"))
-                            typeface = android.graphics.Typeface.DEFAULT_BOLD
-                        } else {
-                            background?.mutate()?.setTint(Color.parseColor("#22FFFFFF"))
-                            setTextColor(Color.parseColor("#88FFFFFF"))
-                        }
+                    val laneView = layoutInflater.inflate(R.layout.item_hud_lane, layoutLanesContainer, false)
+                    val ivLane = laneView.findViewById<ImageView>(R.id.ivLaneArrow)
+                    val res = when (lane.iconType) {
+                        "LEFT" -> R.drawable.ic_lane_left
+                        "RIGHT" -> R.drawable.ic_lane_right
+                        "UTURN" -> R.drawable.ic_arrow_u_turn
+                        else -> R.drawable.ic_lane_straight
                     }
-                    layoutLanesContainer.addView(tv)
+                    ivLane.setImageResource(res)
+                    if (lane.isRecommended) {
+                        ivLane.setColorFilter(Color.parseColor("#00E5FF"))
+                        laneView.background = ContextCompat.getDrawable(this, R.drawable.bg_hud_lane_active)
+                    } else {
+                        ivLane.setColorFilter(Color.parseColor("#55FFFFFF"))
+                        laneView.background = null
+                    }
+                    layoutLanesContainer.addView(laneView)
                 }
             } else {
                 layoutLaneGuidance.visibility = View.GONE
