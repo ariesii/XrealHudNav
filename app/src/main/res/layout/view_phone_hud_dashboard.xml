@@ -93,7 +93,7 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- 超大距離數字 (如 48公尺 或 --) -->
+            <!-- 超大距離數字 (如 48公尺 或 橫線) -->
             <TextView
                 android:id="@+id/phoneTvDistance"
                 android:layout_width="wrap_content"
