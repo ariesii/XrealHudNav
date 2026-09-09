@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>XREAL Air 2 Pro 插入 USB 閃退修復報告</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #E0E0E0; background-color: #121212; padding: 24px; }
+        h1, h2 { color: #00E5FF; }
+        .card { background: #1E1E1E; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .badge-fix { display: inline-block; background: #FF5252; color: #FFF; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-ok { display: inline-block; background: #34C759; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>XREAL Air 2 Pro 插入 USB 閃退問題修復報告</h1>
+    <div class="card">
+        <h2>🔍 閃退原因剖析</h2>
+        <p>在 Presentation 內部呼叫了 <code>setType(TYPE_APPLICATION_OVERLAY)</code>。由於 Presentation 的 Context 為 Activity 且綁定在外接 Display 上，變更為全域懸浮窗 Type 會破壞系統 Display Token，導致 Android 在 <code>show()</code> 時拋出 <code>BadTokenException</code> 閃退。</p>
+    </div>
+    <div class="card">
+        <h2>🛠️ 修復措施</h2>
+        <ul>
+            <li><span class="badge-ok">修復</span> <strong>移除 Presentation 內部 setType</strong>：恢復乾淨的外接螢幕 Window 屬性。</li>
+            <li><span class="badge-ok">防護</span> <strong>DisplayAssistant 增加全面 try-catch</strong>：防止外接設備插拔時主程式崩潰。</li>
+            <li><span class="badge-ok">時鐘解決方案</span> <strong>AMOLED 黑屏純省電防誤觸模式</strong>：手機螢幕 0 亮度運作，徹底杜絕鎖屏大時鐘，安全穩定。</li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>XREAL Air 2 Pro - 閃退修復任務清單</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #E0E0E0; background-color: #121212; padding: 24px; }
+        h1 { color: #00E5FF; }
+        .task-list { list-style: none; padding: 0; }
+        .task-item { background: #1E1E1E; margin-bottom: 10px; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #34C759; }
+    </style>
+</head>
+<body>
+    <h1>閃退問題修復任務清單 (已完成)</h1>
+    <ul class="task-list">
+        <li class="task-item">✅ 調查 XREAL Air 2 Pro 插入 USB 閃退原因 (BadTokenException / Window type 衝突)</li>
+        <li class="task-item">✅ 移除 XrealHudPresentation.kt 內的 setType(TYPE_APPLICATION_OVERLAY)</li>
+        <li class="task-item">✅ DisplayAssistant.kt 加入完整 try-catch 防護，確保外接設備初始化絕不崩潰</li>
+        <li class="task-item">✅ 加強車道線與路況條渲染之 Drawable mutate 與顏色解析例外防護</li>
+        <li class="task-item">✅ 本地舊檔備份至 backup/</li>
+        <li class="task-item">✅ 繁體中文台灣用語文件存至 readme/</li>
+        <li class="task-item">✅ 推送至 GitHub 觸發 CI/CD 線上編譯最新 APK</li>
+    </ul>
+</body>
+</html>

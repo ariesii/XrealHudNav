@@ -82,12 +82,18 @@ class XrealHudPresentation(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 設定外接螢幕防休眠與安全穿透 flags
+        // 設定多重防鎖屏穿透 flags 與懸浮窗層級，徹底防止手機按電源鍵時鎖屏時鐘遮擋眼鏡
         window?.apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (android.provider.Settings.canDrawOverlays(context)) {
+                    setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+                }
+            }
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
             addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
             addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+            addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
             setBackgroundDrawableResource(R.color.hud_background)
         }
 
@@ -319,11 +325,11 @@ class XrealHudPresentation(
                     layoutParams = lp
                     setBackgroundResource(R.drawable.bg_hud_badge)
                     if (lane.isRecommended) {
-                        background?.mutate()?.setTint(Color.parseColor("#00E5FF"))
+                        background.setTint(Color.parseColor("#00E5FF"))
                         setTextColor(Color.parseColor("#000000"))
                         typeface = android.graphics.Typeface.DEFAULT_BOLD
                     } else {
-                        background?.mutate()?.setTint(Color.parseColor("#22FFFFFF"))
+                        background.setTint(Color.parseColor("#22FFFFFF"))
                         setTextColor(Color.parseColor("#88FFFFFF"))
                     }
                 }
@@ -346,11 +352,7 @@ class XrealHudPresentation(
                         seg.weight
                     )
                     layoutParams = lp
-                    try {
-                        setBackgroundColor(Color.parseColor(seg.colorHex))
-                    } catch (_: Exception) {
-                        setBackgroundColor(Color.GREEN)
-                    }
+                    setBackgroundColor(Color.parseColor(seg.colorHex))
                 }
                 layoutTrafficBarSegments.addView(v)
             }

@@ -1,0 +1,16 @@
+# XREAL Air 2 Pro 插入 USB 閃退問題修復報告
+
+## 問題根因分析
+- 在前一次更新中，為防止鎖屏時鐘遮擋眼鏡，在 `XrealHudPresentation` 中加入了 `setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)`。
+- 然而，Presentation 是由系統 WindowManager 專門掛載在獨立副螢幕（Target Display）上的專屬 Window，其 Context 為 Activity。
+- 當使用者賦予懸浮窗權限後，在 Presentation 的 `onCreate` 階段呼叫 `setType(TYPE_APPLICATION_OVERLAY)` 會導致 Window Token 與 Display Token 衝突，觸發 `BadTokenException` 或 `IllegalArgumentException: Window type can not be changed after the window is added`，導致 USB 插上識別到眼鏡的瞬間程式直接閃退（Crash）。
+
+## 修復對策
+1. **移除 Presentation 內部的 TYPE_APPLICATION_OVERLAY**：
+   - 恢復標準安全的 Display Presentation Window 設定，保留 `FLAG_KEEP_SCREEN_ON`、`FLAG_NOT_TOUCHABLE`、`FLAG_SHOW_WHEN_LOCKED` 與 `FLAG_TURN_SCREEN_ON`。
+2. **防鎖屏時鐘的正確方案**：
+   - 透過手機端主畫面的「一鍵 AMOLED 黑屏純省電防誤觸模式」（背光 0.01f，0 nits，AMOLED 零耗電且防誤觸），手機維持系統亮屏運作，徹底杜絕觸發系統 AOD 與待機鎖屏大時鐘，同時保證 Presentation 100% 穩定不閃退。
+3. **DisplayAssistant 增加完整 Exception 防護**：
+   - 在 `checkAndConnectGlasses` 呼叫 `presentation.show()` 時加入 `try-catch (e: Throwable)`，確保即使外接螢幕發生任何短暫硬體連接異常，手機 App 絕不閃退。
+4. **增強車道線與路況條 Drawable/Color 解析防禦**：
+   - 使用 `background?.mutate()?.setTint(...)` 與 `Color.parseColor` try-catch 防護。

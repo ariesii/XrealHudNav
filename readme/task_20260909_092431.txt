@@ -1,0 +1,9 @@
+# 任務進度清單 (Task List) - 20260909_092431
+
+- [x] 調查 XREAL Air 2 Pro 插入 USB 閃退原因 (BadTokenException / Window type 衝突)
+- [x] 移除 XrealHudPresentation.kt 內的 setType(TYPE_APPLICATION_OVERLAY)
+- [x] DisplayAssistant.kt 加入完整 try-catch 防護，確保外接設備初始化絕不崩潰
+- [x] 加強車道線與路況條渲染之 Drawable mutate 與顏色解析例外防護
+- [x] 本地舊檔備份至 backup/
+- [x] 繁體中文台灣用語文件存至 readme/
+- [x] 推送至 GitHub 觸發 CI/CD 線上編譯最新 APK

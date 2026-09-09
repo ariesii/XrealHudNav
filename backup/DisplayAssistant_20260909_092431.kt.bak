@@ -64,16 +64,10 @@ class DisplayAssistant(
             if (activePresentation?.display?.displayId != targetDisplay.displayId) {
                 dismissGlassesPresentation()
                 Log.i(TAG, "成功偵測到 XREAL 智慧眼鏡，啟動 HUD Presentation")
-                try {
-                    activePresentation = XrealHudPresentation(context, targetDisplay).apply {
-                        show()
-                    }
-                    listener.onGlassesConnected(targetDisplay)
-                } catch (e: Throwable) {
-                    Log.e(TAG, "初始化或啟動 XrealHudPresentation 發生異常", e)
-                    activePresentation = null
-                    listener.onGlassesDisconnected()
+                activePresentation = XrealHudPresentation(context, targetDisplay).apply {
+                    show()
                 }
+                listener.onGlassesConnected(targetDisplay)
             }
         } else {
             dismissGlassesPresentation()
