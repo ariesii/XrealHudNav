@@ -7,9 +7,9 @@ import android.util.Log
 import com.xreal.hudnav.model.LaneItem
 import com.xreal.hudnav.model.ManeuverType
 import com.xreal.hudnav.model.NavInfo
-import com.xreal.hudnav.model.NavStateRepository
 import com.xreal.hudnav.model.TrafficLightState
 import com.xreal.hudnav.model.TrafficSegment
+import com.xreal.hudnav.repository.NavStateRepository
 
 /**
  * 高德地圖標準車載廣播接收器 (AutoNavi Standard Broadcast Receiver)
@@ -79,7 +79,7 @@ class AmapBroadcastReceiver : BroadcastReceiver() {
         val cameraDist = intent.getIntExtra("CAMERA_DIST", 0)
         val driveWayStr = intent.getStringExtra("DRIVE_WAY")
 
-        val maneuver = ManeuverType.fromAmapIconCode(iconType)
+        val maneuver = mapAmapIconToManeuver(iconType)
         val distanceStr = if (segRemainDis >= 1000) {
             String.format("%.1f公里", segRemainDis / 1000.0)
         } else if (segRemainDis >= 0) {
@@ -119,7 +119,7 @@ class AmapBroadcastReceiver : BroadcastReceiver() {
             currentSpeed = if (curSpeed >= 0) curSpeed else currentRepo.currentSpeed,
             speedLimit = if (cameraSpeed > 0) cameraSpeed else currentRepo.speedLimit,
             cameraWarning = if (cameraSpeed > 0) "限速 $cameraSpeed" else currentRepo.cameraWarning,
-            cameraDistance = if (cameraDist > 0) cameraDist else currentRepo.cameraDistance,
+            cameraDistance = if (cameraDist > 0) "${cameraDist}m" else currentRepo.cameraDistance,
             trafficLightState = currentRepo.trafficLightState,
             trafficLightSeconds = currentRepo.trafficLightSeconds,
             mapSource = "高德地圖",
@@ -174,6 +174,26 @@ class AmapBroadcastReceiver : BroadcastReceiver() {
                 distance = "--"
             )
         )
+    }
+
+    private fun mapAmapIconToManeuver(icon: Int): ManeuverType {
+        return when (icon) {
+            1 -> ManeuverType.STRAIGHT
+            2 -> ManeuverType.TURN_LEFT
+            3 -> ManeuverType.TURN_RIGHT
+            4 -> ManeuverType.SLIGHT_LEFT
+            5 -> ManeuverType.SLIGHT_RIGHT
+            6 -> ManeuverType.SHARP_LEFT
+            7 -> ManeuverType.SHARP_RIGHT
+            8 -> ManeuverType.U_TURN
+            9 -> ManeuverType.KEEP_LEFT
+            10 -> ManeuverType.KEEP_RIGHT
+            11 -> ManeuverType.ROUNDABOUT_ENTER
+            12 -> ManeuverType.ROUNDABOUT_EXIT
+            13 -> ManeuverType.MERGE
+            14 -> ManeuverType.FORK
+            else -> ManeuverType.STRAIGHT
+        }
     }
 
     private fun parseDriveWay(driveWayStr: String?, maneuver: ManeuverType): List<LaneItem> {
