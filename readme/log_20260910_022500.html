@@ -112,6 +112,12 @@ Antigravity 操作與學習日誌 (Operation &amp; Learning Log)
    - 切回 HUD App，日誌看板會即時印出高德原始廣播 [高德收到] TYPE=10001 / TYPE=13012 / TYPE=60073。
    - HUD 畫面即時同步路名、大箭頭、公尺距離、限速照相、車道線與紅綠燈倒數秒數！
 ================================================================================
+
+--------------------------------------------------------------------------------
+【編譯修正記錄 (Compilation Fix)】
+- 修正項目 1：MainActivity.kt 補充遺漏之 import android.util.Log。
+- 修正項目 2：AmapBroadcastReceiver.kt 對齊模型定義，將 LaneItem 建構子參數由 direction/isOptimal 修正為正確的 iconType/isRecommended。
+--------------------------------------------------------------------------------
 </pre>
 </body>
 </html>

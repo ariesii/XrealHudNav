@@ -256,7 +256,7 @@ class AmapBroadcastReceiver : BroadcastReceiver() {
                         || "1" == obj.optString("trafficLaneAdvised")
 
                 val direction = mapLaneIconToDirection(iconStr)
-                laneItems.add(LaneItem(direction = direction, isOptimal = advised))
+                laneItems.add(LaneItem(iconType = direction, isRecommended = advised))
             }
             return laneItems
         } catch (e: Exception) {
