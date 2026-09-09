@@ -782,11 +782,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         if (info.isNavigating) {
             tvStandbyHint.visibility = View.GONE
             ivManeuver.alpha = 1.0f
-            if (info.customIconBitmap != null) {
-                ivManeuver.setImageBitmap(info.customIconBitmap)
-            } else {
-                ivManeuver.setImageResource(info.maneuver.iconResId)
-            }
+            ivManeuver.setImageResource(info.maneuver.iconResId)
             tvDistance.text = info.distance
             tvRoadName.text = info.roadName
 

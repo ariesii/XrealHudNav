@@ -48,13 +48,12 @@ enum class ManeuverType(
             val lower = text.lowercase()
             return when {
                 lower.contains("迴轉") || lower.contains("調頭") || lower.contains("掉頭") || lower.contains("u-turn") || text.contains("⤺") -> U_TURN
-                lower.contains("向左微轉") || lower.contains("靠左") || lower.contains("微左") || lower.contains("左前方") || lower.contains("走左側") || lower.contains("slight left") || text.contains("↖") -> SLIGHT_LEFT
-                lower.contains("向右微轉") || lower.contains("靠右") || lower.contains("微右") || lower.contains("右前方") || lower.contains("走右側") || lower.contains("下交流道") || lower.contains("slight right") || text.contains("↗") -> SLIGHT_RIGHT
+                lower.contains("靠左") || lower.contains("微左") || lower.contains("左前方") || lower.contains("slight left") || text.contains("↖") -> SLIGHT_LEFT
+                lower.contains("靠右") || lower.contains("微右") || lower.contains("右前方") || lower.contains("slight right") || text.contains("↗") -> SLIGHT_RIGHT
                 lower.contains("左轉") || lower.contains("向左") || lower.contains("left") || text.contains("↰") || text.contains("↲") -> TURN_LEFT
                 lower.contains("右轉") || lower.contains("向右") || lower.contains("right") || text.contains("↱") || text.contains("↳") -> TURN_RIGHT
-                lower.contains("圓環") || lower.contains("出口") || lower.contains("roundabout") -> SLIGHT_RIGHT
                 lower.contains("抵達") || lower.contains("到達") || lower.contains("目的地") || lower.contains("arrive") -> DESTINATION
-                lower.contains("直行") || lower.contains("直走") || lower.contains("前往") || lower.contains("進入") || lower.contains("順行") || lower.contains("沿") || text.contains("↑") || lower.contains("straight") -> STRAIGHT
+                lower.contains("直行") || lower.contains("前往") || lower.contains("進入") || lower.contains("順行") || text.contains("↑") || lower.contains("straight") -> STRAIGHT
                 else -> UNKNOWN
             }
         }

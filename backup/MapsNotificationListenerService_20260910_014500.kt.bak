@@ -187,7 +187,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
         Log.d(TAG, logEntry)
         NavStateRepository.appendNotificationLog(logEntry)
 
-        parseAndPostNavData(mapSourceName, title, text, subText, ticker, distinctTexts, remoteViewData.firstBitmap, notification, sbn.packageName)
+        parseAndPostNavData(mapSourceName, title, text, subText, ticker, distinctTexts, remoteViewData.firstBitmap, notification)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -286,8 +286,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
         ticker: String,
         extractedTexts: List<String>,
         rvBitmap: Bitmap?,
-        notification: Notification,
-        targetPackage: String
+        notification: Notification
     ) {
         val fullContentBuilder = StringBuilder()
         fullContentBuilder.append(title).append(" ").append(subText).append(" ").append(text).append(" ").append(ticker)
@@ -308,13 +307,15 @@ class MapsNotificationListenerService : NotificationListenerService() {
             }
         }
 
-        // 提取原生地圖官方高解析度導航圖標 (Google Maps / 高德地圖 原版向量或點陣圖)
-        val officialBitmap = rvBitmap ?: extractBitmapFromNotification(notification, targetPackage)
-        if (officialBitmap != null) {
-            NavStateRepository.appendNotificationLog("[$source] 成功截取官方原版導航圖標 (${officialBitmap.width}x${officialBitmap.height})")
-            val iconManeuver = analyzeBitmapDirection(officialBitmap)
-            if (iconManeuver != null && (maneuver == ManeuverType.STRAIGHT || maneuver == ManeuverType.UNKNOWN)) {
-                maneuver = iconManeuver
+        // 如果仍為未知或直行，嘗試透過 RemoteViews 或 Notification 的 Bitmap 做重心判定
+        if (maneuver == ManeuverType.STRAIGHT || maneuver == ManeuverType.UNKNOWN) {
+            val targetBmp = rvBitmap ?: extractBitmapFromNotification(notification)
+            if (targetBmp != null) {
+                val iconManeuver = analyzeBitmapDirection(targetBmp)
+                if (iconManeuver != null) {
+                    maneuver = iconManeuver
+                    Log.i(TAG, "透過圖標視覺重心成功識別轉向: ${maneuver.description}")
+                }
             }
         }
 
@@ -456,65 +457,25 @@ class MapsNotificationListenerService : NotificationListenerService() {
             isNavigating = true,
             lanes = generatedLanes,
             trafficSegments = trafficBars,
-            routeProgress = 0.35f,
-            customIconBitmap = officialBitmap
+            routeProgress = 0.35f
         )
 
         NavStateRepository.updateNavInfo(navInfo)
     }
 
-    /**
-     * 深度提取 Google Maps / 高德地圖 原始高解析度導航箭頭與圖標
-     */
-    private fun extractBitmapFromNotification(notification: Notification, targetPackage: String): Bitmap? {
-        // 1. 優先從 Notification.getLargeIcon() 取得 (Google 地圖絕大多數將路口轉向圖放在此)
-        try {
-            val icon = notification.getLargeIcon()
-            if (icon != null) {
-                val drawable = icon.loadDrawable(this)
-                val bmp = drawableToBitmap(drawable)
-                if (bmp != null) return bmp
-            }
-        } catch (_: Exception) {}
-
-        // 2. 從 Notification.extras 取得 EXTRA_LARGE_ICON
-        try {
-            @Suppress("DEPRECATION")
-            val extraBmp = notification.extras?.getParcelable<Bitmap>(Notification.EXTRA_LARGE_ICON)
-            if (extraBmp != null) return extraBmp
-        } catch (_: Exception) {}
-
-        // 3. 從 Notification.getSmallIcon() 取得
-        try {
-            val smallIcon = notification.getSmallIcon()
-            if (smallIcon != null) {
-                val pkgCtx = try {
-                    createPackageContext(targetPackage, Context.CONTEXT_RESTRICTED or Context.CONTEXT_IGNORE_SECURITY)
-                } catch (_: Exception) {
-                    this
-                }
-                val drawable = smallIcon.loadDrawable(pkgCtx)
-                val bmp = drawableToBitmap(drawable)
-                if (bmp != null && bmp.width >= 24 && bmp.height >= 24) return bmp
-            }
-        } catch (_: Exception) {}
-
-        return null
-    }
-
-    private fun drawableToBitmap(drawable: android.graphics.drawable.Drawable?): Bitmap? {
-        if (drawable == null) return null
-        if (drawable is BitmapDrawable && drawable.bitmap != null) {
-            return drawable.bitmap
-        }
+    private fun extractBitmapFromNotification(notification: Notification): Bitmap? {
         return try {
-            val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 128
-            val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 128
-            val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = android.graphics.Canvas(bmp)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bmp
+            val icon = notification.getLargeIcon() ?: return null
+            val drawable = icon.loadDrawable(this) ?: return null
+            if (drawable is BitmapDrawable) {
+                drawable.bitmap
+            } else {
+                val bmp = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+                val canvas = android.graphics.Canvas(bmp)
+                drawable.setBounds(0, 0, 32, 32)
+                drawable.draw(canvas)
+                bmp
+            }
         } catch (_: Exception) {
             null
         }

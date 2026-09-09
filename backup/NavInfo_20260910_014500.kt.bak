@@ -65,8 +65,7 @@ data class NavInfo(
     val isNavigating: Boolean = false,
     val lanes: List<LaneItem> = emptyList(),
     val trafficSegments: List<TrafficSegment> = emptyList(),
-    val routeProgress: Float = 0.0f,
-    val customIconBitmap: android.graphics.Bitmap? = null
+    val routeProgress: Float = 0.0f
 ) {
     fun isSpeeding(): Boolean = currentSpeed > speedLimit && speedLimit > 0
     fun hasTrafficLight(): Boolean = trafficLightState != TrafficLightState.NONE && trafficLightSeconds != null && trafficLightSeconds > 0

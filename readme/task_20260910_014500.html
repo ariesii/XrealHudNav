@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Google 地圖官方原生導航圖標訊號截取任務說明</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #121212; color: #E0E0E0; padding: 24px; }
+        h1 { color: #00E5FF; }
+        .card { background: #1E1E1E; border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 4px solid #00E5FF; }
+        ul { line-height: 1.8; }
+        code { background: #2A2A2A; color: #FFD54F; padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Google 地圖官方原生導航圖標訊號截取任務說明</h1>
+    <div class="card">
+        <h3>技術突破重點</h3>
+        <ul>
+            <li><b>原生地圖訊號直通：</b>告別本地硬編碼之 6 個固定枚舉箭頭，直接從 Google Maps 的通知封包（Notification LargeIcon）抽取官方動態產生的原始向量/點陣圖。</li>
+            <li><b>支援所有複雜路況箭頭：</b>包含圓環出口編號、高架橋分岔、多車道微靠左/微靠右等 Google Maps 原創精細圖形，100% 原始呈現在 XREAL 眼鏡上。</li>
+            <li><b>雙通道無縫相容：</b>若截取到原生 Bitmap 優先繪製原版圖標；若無則自動降級使用本地向量圖。</li>
+        </ul>
+    </div>
+</body>
+</html>

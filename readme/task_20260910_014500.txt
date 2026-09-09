@@ -1,0 +1,14 @@
+任務說明 (Task): 截取 Google Maps 官方原版導航圖標訊號並直接於 HUD 呈現
+時間: 2026-09-10 01:45:00
+
+【核心問題剖析】
+1. 使用者反饋：使用 Google Maps 導航時，轉向箭頭像是程式本地自己畫的，除了右轉之外其他複雜圖形（圓環、微偏、岔路等）無法正常顯示。
+2. 經檢查原始碼：過去系統將截取的官方導航圖標（LargeIcon）僅用於計算左右像素重心以猜測左轉或右轉，猜測後便將原始高解析度 Bitmap 丟棄，強制退回使用本地僅有的 6 個固定向量圖 (R.drawable.ic_arrow_*)。
+3. 若 Google Maps 播報或文字為「向左微轉」、「在圓環第二個出口駛出」等複雜情境，本地枚舉無法精確對應，導致圖形無法顯示或退回預設。
+
+【執行工作清單】
+- [x] 在 NavInfo 資料模型中新增 customIconBitmap: Bitmap? 欄位。
+- [x] 在 MapsNotificationListenerService 實作全維度官方導航圖標截取 (getLargeIcon, EXTRA_LARGE_ICON, RemoteViews, getSmallIcon)。
+- [x] 將截取之 Google Maps 原版高解析度導航圖標 (Bitmap) 傳遞給 NavInfo.customIconBitmap，直接在 HUD 呈現。
+- [x] 更新 XrealHudPresentation 與 MainActivity 預覽視窗，優先使用 customIconBitmap 渲染轉向指標。
+- [x] 擴充 ManeuverType.fromText 語意關鍵詞庫，支援圓環、下交流道、靠左/靠右行駛等。

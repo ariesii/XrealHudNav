@@ -238,12 +238,8 @@ class XrealHudPresentation(
 
         handleSmartGlance(info)
 
-        // 5. 2 倍大指標圖示與動態流光（優先使用 Google Maps / 高德地圖 原版原生圖標）
-        if (info.customIconBitmap != null) {
-            ivManeuver.setImageBitmap(info.customIconBitmap)
-        } else {
-            ivManeuver.setImageResource(info.maneuver.iconResId)
-        }
+        // 5. 2 倍大指標圖示與動態流光（若在極限省電模式下停用動畫以省電）
+        ivManeuver.setImageResource(info.maneuver.iconResId)
         val isTurnManeuver = info.maneuver != ManeuverType.STRAIGHT && info.maneuver != ManeuverType.DESTINATION
         val canAnimate = info.powerMode != PowerMode.ULTRA_ECO
 

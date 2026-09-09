@@ -1,0 +1,14 @@
+完成進度總結 (Walkthrough): Google Maps 官方原生導航圖標訊號截取與直接呈現
+時間: 2026-09-10 01:45:00
+
+【完成之代碼改造】
+1. NavInfo.kt:
+   - 新增 customIconBitmap: Bitmap? 屬性，用以乘載 Google 地圖與高德地圖原版圖標。
+2. MapsNotificationListenerService.kt:
+   - 實作 extractBitmapFromNotification，從 getLargeIcon() 與 extras 提取原始最高解析度圖標 (128x128)。
+   - 將 officialBitmap 直通至 NavInfo.customIconBitmap。
+   - 增加 [Google Maps] 成功截取官方原版導航圖標 (WxH) 日誌反饋。
+3. XrealHudPresentation.kt & MainActivity.kt:
+   - ivManeuver 優先渲染 customIconBitmap，保留 Google 官方原始細緻圖示。
+4. ManeuverType.kt:
+   - 擴充 fromText 關鍵詞判定（向左微轉、向右微轉、圓環出口、下交流道等）。
