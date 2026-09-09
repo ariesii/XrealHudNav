@@ -109,16 +109,6 @@ class MapsNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    override fun onListenerConnected() {
-        super.onListenerConnected()
-        NavStateRepository.appendNotificationLog("[系統] 通知監聽服務已就緒並成功連線 ✅")
-    }
-
-    override fun onListenerDisconnected() {
-        super.onListenerDisconnected()
-        NavStateRepository.appendNotificationLog("[系統] ⚠️ 通知監聽服務已被系統斷開")
-    }
-
     private fun isTargetMapPackage(pkg: String): Boolean {
         val lower = pkg.lowercase()
         return lower.contains("autonavi") ||
@@ -137,8 +127,6 @@ class MapsNotificationListenerService : NotificationListenerService() {
 
         val notification = sbn.notification ?: return
         val extras = notification.extras ?: return
-
-        NavStateRepository.appendNotificationLog("[通知捕捉] 收到地圖通知: $pkg")
 
         val mapSourceName = when {
             pkg.contains("google", ignoreCase = true) -> "Google Maps"

@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 標題與簡介 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="XREAL Air 2 Pro 導航 HUD"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="2倍指標 · 3倍時速 (96sp) · 防鎖屏時鐘 · 智慧省電"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp" />
+
+            <!-- 狀態卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                app:cardBackgroundColor="#1E1E1E"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- 眼鏡連接狀態 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/indicatorGlasses"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:background="@drawable/bg_hud_badge"
+                            android:backgroundTint="#FF5252" />
+
+                        <TextView
+                            android:id="@+id/tvGlassesStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/glasses_disconnected"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="#2C2C2C" />
+
+                    <!-- 授權與電量 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvBatteryStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="手機電量: 🔋 85%"
+                            android:textColor="@color/hud_accent_cyan"
+                            android:textSize="13sp" />
+
+                        <Button
+                            android:id="@+id/btnGrantPermission"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="通知授權"
+                            android:textColor="@color/hud_accent_cyan" />
+
+                        <Button
+                            android:id="@+id/btnGrantGps"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="授權 GPS"
+                            android:textColor="@color/hud_accent_cyan" />
+
+                        <Button
+                            android:id="@+id/btnGrantOverlay"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="懸浮窗"
+                            android:textColor="@color/hud_accent_amber" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 黑屏純省電防誤觸模式按鈕 -->
+            <Button
+                android:id="@+id/btnEnterBlackout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="#2E7D32"
+                android:text="進入手機黑屏純省電模式 (防鎖屏時鐘 · AMOLED 0耗電)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <!-- 即時通知診斷監聽日誌卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#1E1E1E"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="即時通知診斷日誌 (高德/Google 地圖狀態)"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="顯示手機捕獲到的地圖通知與車載廣播，確保高德地圖資料正常流入"
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnPingAmap"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:paddingLeft="8dp"
+                            android:paddingRight="8dp"
+                            android:text="廣播握手"
+                            android:textSize="12sp"
+                            android:textColor="#00E5FF"
+                            app:strokeColor="#00E5FF" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvNotificationLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="100dp"
+                        android:layout_marginTop="8dp"
+                        android:background="#0A0A0A"
+                        android:fontFamily="monospace"
+                        android:padding="8dp"
+                        android:scrollbars="vertical"
+                        android:text="等待通知或廣播封包流入..."
+                        android:textColor="#00E5FF"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="💡 提示：若高德僅顯示「正在導航」，請至高德設置 -> 導航設置 -> 輔助功能，開啟「車載藍牙/導航廣播」與「狀態欄常駐導航詳情」"
+                        android:textColor="#FFCC00"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 省電模型選擇卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#1E1E1E"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="省電模型選擇 (眼鏡即時生效)"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rgPowerMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp">
+
+                        <RadioButton
+                            android:id="@+id/rbNormal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="標準模式 (流光動畫、1秒 GPS 刷新)"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp" />
+
+                        <RadioButton
+                            android:id="@+id/rbEco"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="智慧省電 (直行自動全黑休眠，路口喚醒)"
+                            android:textColor="#00E5FF"
+                            android:textSize="13sp" />
+
+                        <RadioButton
+                            android:id="@+id/rbUltraEco"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="極致續航 (停用動畫，靜態超大字體最省電)"
+                            android:textColor="#FFB300"
+                            android:textSize="13sp" />
+                    </RadioGroup>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 1080p 即時鏡像預覽視窗 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="眼鏡端 HUD 即時預覽 (2倍指標 + 3倍時速)"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <FrameLayout
+                android:id="@+id/previewWindow"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginTop="6dp"
+                android:background="#000000">
+
+                <include
+                    android:id="@+id/hudPreviewContent"
+                    layout="@layout/presentation_xreal_hud" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="8dp"
+                    android:text="1080p OLED 即時鏡像"
+                    android:textColor="#44FFFFFF"
+                    android:textSize="11sp" />
+            </FrameLayout>
+
+            <!-- 離線展示情境模擬 -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#1E1E1E"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="路況展示情境模擬"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="展示 136dp 大箭頭、96sp 超大時速、紅綠燈倒數 🔴 24s 與電池電量。"
+                        android:textColor="#90A4AE"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnToggleDemo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:backgroundTint="@color/hud_accent_cyan"
+                        android:text="@string/start_demo"
+                        android:textColor="#000000" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 一鍵黑屏純省電防誤觸覆蓋視圖 (全黑 0 亮度，AMOLED 零耗電，雙擊喚醒) -->
+    <FrameLayout
+        android:id="@+id/layoutBlackoutOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="已進入黑屏純省電模式"
+                android:textColor="#22FFFFFF"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="手機螢幕 0 耗電 · 眼鏡持續導航 · 防鎖屏時鐘"
+                android:textColor="#18FFFFFF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="【 雙擊螢幕喚醒手機 】"
+                android:textColor="#33FFFFFF"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+</FrameLayout>

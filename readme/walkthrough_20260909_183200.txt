@@ -1,0 +1,17 @@
+完成進度總結 (Walkthrough): HUD 即時預覽置頂、數據看板 (Inspector) 與全螢幕模擬
+時間: 2026-09-09 18:32:00
+
+【完成之主要變更】
+1. activity_main.xml:
+   - 將「眼鏡端 HUD 即時預覽」移至介面最頂端。
+   - 新增「📊 HUD 即時接收數據看板 (Inspector)」卡片。
+   - 新增「🧪 快速測試注入」按鈕組 (高德 48m 右轉、Google 150m 左轉、紅綠燈倒數 28s)。
+   - 新增「⛶ 全螢幕 HUD 鏡像預覽」圖層 (layoutFullscreenHud)。
+2. MainActivity.kt:
+   - renderPreview 改版：車速 (96sp)、電池與省電模式永久顯示，未導航時顯示待命直行狀態。
+   - 實作 renderInspector：即時更新地圖來源標籤、轉向代碼、距離、路名、車道線與紅綠燈秒數。
+   - 實作全螢幕模擬切換 (btnFullscreenPreview 與 btnCloseFullscreen)。
+   - 實作 3 組一鍵測試注入邏輯，立即將模擬數據灌入 NavStateRepository。
+3. MapsNotificationListenerService.kt:
+   - 加入 onListenerConnected 與 onListenerDisconnected 生命週期日誌。
+   - 加入 [通知捕捉] 即時印出收到之地圖套件通知。

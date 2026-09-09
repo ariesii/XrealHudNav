@@ -29,15 +29,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="2倍指標 · 3倍時速 (96sp) · 防鎖屏時鐘 · 智慧省電"
+                android:text="2倍指標 · 3倍時速 (96sp) · 即時預覽看板 · 免插眼鏡調試"
                 android:textColor="#B0BEC5"
                 android:textSize="13sp" />
 
-            <!-- 狀態卡片 -->
+            <!-- 系統與眼鏡狀態卡片 -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
                 app:cardBackgroundColor="#1E1E1E"
                 app:cardCornerRadius="12dp">
 
@@ -45,9 +45,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="12dp">
 
-                    <!-- 眼鏡連接狀態 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -65,35 +64,27 @@
                             android:id="@+id/tvGlassesStatus"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
+                            android:layout_marginStart="10dp"
                             android:layout_weight="1"
                             android:text="@string/glasses_disconnected"
                             android:textColor="#FFFFFF"
                             android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:background="#2C2C2C" />
-
-                    <!-- 授權與電量 -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
 
                         <TextView
                             android:id="@+id/tvBatteryStatus"
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="手機電量: 🔋 85%"
+                            android:text="🔋 85%"
                             android:textColor="@color/hud_accent_cyan"
                             android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="end|center_vertical"
+                        android:orientation="horizontal">
 
                         <Button
                             android:id="@+id/btnGrantPermission"
@@ -119,20 +110,327 @@
                             android:text="懸浮窗"
                             android:textColor="@color/hud_accent_amber" />
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 【核心亮點 1】眼鏡端 HUD 1080p 即時鏡像預覽視窗 (置頂呈現，免插眼鏡即可除錯) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#000000"
+                app:cardCornerRadius="12dp"
+                app:strokeColor="#333333"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#1C1C1E"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="👓 HUD 畫面即時預覽 (與眼鏡 100% 同步)"
+                            android:textColor="#00E5FF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnFullscreenPreview"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:text="⛶ 全螢幕模擬"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/previewWindow"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:background="#000000">
+
+                        <include
+                            android:id="@+id/hudPreviewContent"
+                            layout="@layout/presentation_xreal_hud" />
+
+                    </FrameLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 【核心亮點 2】HUD 即時接收數據看板 (Inspector) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#1A1F26"
+                app:cardCornerRadius="12dp"
+                app:strokeColor="#00E5FF"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📊 HUD 即時接收數據看板"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvInspectorStatusBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_hud_badge"
+                            android:backgroundTint="#2E7D32"
+                            android:paddingStart="8dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="2dp"
+                            android:text="待機中"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- 數據明細表 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="地圖來源："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectSource"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="尚未連線"
+                            android:textColor="#00E5FF"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="GPS 車速："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectSpeed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 km/h"
+                            android:textColor="#69F0AE"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="轉向動作："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectManeuver"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="直行 (預設)"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="路口距離："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectDistance"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="#FFD54F"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="目標路名："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectRoad"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="等待導航開始..."
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="紅綠燈："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectTrafficLight"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="無號誌"
+                            android:textColor="#B0BEC5"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:text="車道線："
+                            android:textColor="#90A4AE"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvInspectLanes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="未提供"
+                            android:textColor="#B0BEC5"
+                            android:textSize="12sp" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 黑屏純省電防誤觸模式按鈕 -->
-            <Button
-                android:id="@+id/btnEnterBlackout"
+            <!-- 【核心亮點 3】一鍵快速測試注入工具組 (免出門、免插眼鏡即可驗證) -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:backgroundTint="#2E7D32"
-                android:text="進入手機黑屏純省電模式 (防鎖屏時鐘 · AMOLED 0耗電)"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                app:cardBackgroundColor="#1E1E1E"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🧪 快速測試注入 (驗證預覽與眼鏡顯示)"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnInjectAmapRight"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="高德右轉 48m"
+                            android:textColor="#00E5FF"
+                            android:textSize="11sp"
+                            app:strokeColor="#00E5FF" />
+
+                        <Button
+                            android:id="@+id/btnInjectGoogleLeft"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="Google 左轉 150m"
+                            android:textColor="#69F0AE"
+                            android:textSize="11sp"
+                            app:strokeColor="#69F0AE" />
+
+                        <Button
+                            android:id="@+id/btnInjectTrafficLight"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:text="紅燈倒數 28s"
+                            android:textColor="#FF5252"
+                            android:textSize="11sp"
+                            app:strokeColor="#FF5252" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- 即時通知診斷監聽日誌卡片 -->
             <com.google.android.material.card.MaterialCardView
@@ -151,23 +449,23 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="即時通知診斷日誌 (高德/Google 地圖狀態)"
+                        android:text="即時通知與廣播封包日誌"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
                         android:layout_marginTop="4dp"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
-                            android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:text="顯示手機捕獲到的地圖通知與車載廣播，確保高德地圖資料正常流入"
+                            android:layout_weight="1"
+                            android:text="記錄捕獲的地圖通知或高德車載廣播，確保數據流入"
                             android:textColor="#90A4AE"
                             android:textSize="12sp" />
 
@@ -179,15 +477,15 @@
                             android:paddingLeft="8dp"
                             android:paddingRight="8dp"
                             android:text="廣播握手"
-                            android:textSize="12sp"
                             android:textColor="#00E5FF"
+                            android:textSize="12sp"
                             app:strokeColor="#00E5FF" />
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvNotificationLog"
                         android:layout_width="match_parent"
-                        android:layout_height="100dp"
+                        android:layout_height="120dp"
                         android:layout_marginTop="8dp"
                         android:background="#0A0A0A"
                         android:fontFamily="monospace"
@@ -201,7 +499,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="💡 提示：若高德僅顯示「正在導航」，請至高德設置 -> 導航設置 -> 輔助功能，開啟「車載藍牙/導航廣播」與「狀態欄常駐導航詳情」"
+                        android:text="💡 提示：若高德未推送，可點擊上方【廣播握手】或【快速測試注入】進行連線驗證"
                         android:textColor="#FFCC00"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -224,9 +522,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="省電模型選擇 (眼鏡即時生效)"
+                        android:text="省電模型選擇 (即時生效)"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <RadioGroup
@@ -240,7 +538,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:checked="true"
-                            android:text="標準模式 (流光動畫、1秒 GPS 刷新)"
+                            android:text="標準模式 (流光動畫、高頻 GPS 刷新)"
                             android:textColor="#FFFFFF"
                             android:textSize="13sp" />
 
@@ -256,50 +554,18 @@
                             android:id="@+id/rbUltraEco"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="極致續航 (停用動畫，靜態超大字體最省電)"
+                            android:text="極致續航 (純靜態超大字體，關閉動態)"
                             android:textColor="#FFB300"
                             android:textSize="13sp" />
                     </RadioGroup>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 1080p 即時鏡像預覽視窗 -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="眼鏡端 HUD 即時預覽 (2倍指標 + 3倍時速)"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <FrameLayout
-                android:id="@+id/previewWindow"
-                android:layout_width="match_parent"
-                android:layout_height="220dp"
-                android:layout_marginTop="6dp"
-                android:background="#000000">
-
-                <include
-                    android:id="@+id/hudPreviewContent"
-                    layout="@layout/presentation_xreal_hud" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|end"
-                    android:layout_margin="8dp"
-                    android:text="1080p OLED 即時鏡像"
-                    android:textColor="#44FFFFFF"
-                    android:textSize="11sp" />
-            </FrameLayout>
-
-            <!-- 離線展示情境模擬 -->
+            <!-- 離線動態展示情境模擬 -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:layout_marginBottom="24dp"
+                android:layout_marginTop="12dp"
                 app:cardBackgroundColor="#1E1E1E"
                 app:cardCornerRadius="12dp">
 
@@ -312,30 +578,33 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="路況展示情境模擬"
+                        android:text="路況動態展示情境模擬"
                         android:textColor="#FFFFFF"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="展示 136dp 大箭頭、96sp 超大時速、紅綠燈倒數 🔴 24s 與電池電量。"
-                        android:textColor="#90A4AE"
-                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/btnToggleDemo"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="8dp"
                         android:backgroundTint="@color/hud_accent_cyan"
                         android:text="@string/start_demo"
                         android:textColor="#000000" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- 黑屏純省電防誤觸模式按鈕 -->
+            <Button
+                android:id="@+id/btnEnterBlackout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="24dp"
+                android:backgroundTint="#2E7D32"
+                android:text="進入手機黑屏純省電模式 (防鎖屏時鐘 · 雙擊喚醒)"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
 
         </LinearLayout>
     </ScrollView>
@@ -360,26 +629,44 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="已進入黑屏純省電模式"
-                android:textColor="#22FFFFFF"
-                android:textSize="16sp" />
+                android:text="AMOLED 極黑省電模式運作中"
+                android:textColor="#333333"
+                android:textSize="14sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="手機螢幕 0 耗電 · 眼鏡持續導航 · 防鎖屏時鐘"
-                android:textColor="#18FFFFFF"
+                android:text="雙擊螢幕任意位置喚醒"
+                android:textColor="#222222"
                 android:textSize="12sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="【 雙擊螢幕喚醒手機 】"
-                android:textColor="#33FFFFFF"
-                android:textSize="14sp" />
         </LinearLayout>
+    </FrameLayout>
+
+    <!-- 【核心亮點 4】全螢幕 HUD 鏡像預覽覆蓋層 (直接將手機當 HUD 檢視) -->
+    <FrameLayout
+        android:id="@+id/layoutFullscreenHud"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <include
+            android:id="@+id/hudFullscreenContent"
+            layout="@layout/presentation_xreal_hud" />
+
+        <Button
+            android:id="@+id/btnCloseFullscreen"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="16dp"
+            android:text="✕ 退出全螢幕"
+            android:textColor="#88FFFFFF"
+            android:textSize="14sp" />
     </FrameLayout>
 
 </FrameLayout>
