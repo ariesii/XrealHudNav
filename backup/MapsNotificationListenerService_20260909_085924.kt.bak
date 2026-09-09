@@ -26,7 +26,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "MultiMapNotification"
         private const val PKG_GOOGLE_MAPS = "com.google.android.apps.maps"
-        private const val PKG_AMAP_STANDARD = "com.autonavi.minimap"
+        private const val PKG_AMAP = "com.autonavi.minimap"
         private const val PKG_AMAP_AUTO = "com.autonavi.amapauto"
 
         // 高德車載標準導航廣播 Action
@@ -59,32 +59,22 @@ class MapsNotificationListenerService : NotificationListenerService() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == ACTION_AMAP_BROADCAST) {
                     val keyType = intent.getIntExtra("KEY_TYPE", 0)
-                    NavStateRepository.appendNotificationLog("廣播[高德] KEY_TYPE=$keyType")
                     if (keyType == 10001) { // 導航資訊更新
                         val iconCode = intent.getIntExtra("EXTRA_MNAEUVER_ID", intent.getIntExtra("EXTRA_ICON", 0))
                         val nextRoad = intent.getStringExtra("EXTRA_NEXT_ROAD_NAME").orEmpty()
                         val remainDis = intent.getIntExtra("EXTRA_SEG_REMAIN_DIS", 0)
 
                         Log.i(TAG, "收到高德車載廣播 -> 動作代碼: $iconCode, 下一路口: $nextRoad, 剩餘公尺: $remainDis")
-                        NavStateRepository.appendNotificationLog("高德廣播路況: $nextRoad, $remainDis m, code=$iconCode")
 
                         if (iconCode > 0 || nextRoad.isNotBlank()) {
                             val maneuver = ManeuverType.fromAmapIconCode(iconCode)
                             val current = NavStateRepository.navState.value
-                            val generatedLanes = buildLanesForManeuver(maneuver)
-                            val trafficBars = listOf(
-                                com.xreal.hudnav.model.TrafficSegment("#34C759", 0.6f),
-                                com.xreal.hudnav.model.TrafficSegment("#FFCC00", 0.25f),
-                                com.xreal.hudnav.model.TrafficSegment("#FF3B30", 0.15f)
-                            )
                             NavStateRepository.updateNavInfo(
                                 current.copy(
                                     maneuver = maneuver,
                                     distance = if (remainDis > 0) "${remainDis}m" else current.distance,
                                     distanceMeters = if (remainDis > 0) remainDis else current.distanceMeters,
                                     roadName = if (nextRoad.isNotBlank()) nextRoad else current.roadName,
-                                    lanes = generatedLanes,
-                                    trafficSegments = trafficBars,
                                     mapSource = "高德地圖",
                                     isNavigating = true
                                 )
@@ -109,29 +99,20 @@ class MapsNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    private fun isTargetMapPackage(pkg: String): Boolean {
-        val lower = pkg.lowercase()
-        return lower.contains("autonavi") ||
-                lower.contains("amap") ||
-                lower.contains("google.android.apps.maps") ||
-                lower.contains("waze") ||
-                (lower.contains("map") && !lower.contains("wallpaper") && !lower.contains("camera"))
-    }
-
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
 
         val pkg = sbn.packageName
-        if (!isTargetMapPackage(pkg)) return
+        if (pkg != PKG_GOOGLE_MAPS && pkg != PKG_AMAP && pkg != PKG_AMAP_AUTO) return
 
         val notification = sbn.notification ?: return
         val extras = notification.extras ?: return
 
-        val mapSourceName = when {
-            pkg.contains("google", ignoreCase = true) -> "Google Maps"
-            pkg.contains("autonavi", ignoreCase = true) || pkg.contains("amap", ignoreCase = true) -> "高德地圖"
-            pkg.contains("waze", ignoreCase = true) -> "Waze"
+        val mapSourceName = when (pkg) {
+            PKG_GOOGLE_MAPS -> "Google Maps"
+            PKG_AMAP -> "高德地圖"
+            PKG_AMAP_AUTO -> "高德車機"
             else -> "導航"
         }
 
@@ -140,9 +121,7 @@ class MapsNotificationListenerService : NotificationListenerService() {
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
         val ticker = notification.tickerText?.toString().orEmpty()
 
-        val logEntry = "[$mapSourceName] $title | $text"
-        Log.d(TAG, logEntry)
-        NavStateRepository.appendNotificationLog(logEntry)
+        Log.d(TAG, "[$mapSourceName] 通知內容 -> Title: [$title], Text: [$text], SubText: [$subText], Ticker: [$ticker]")
 
         if (title.isBlank() && text.isBlank()) return
 
@@ -151,9 +130,8 @@ class MapsNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        val pkg = sbn?.packageName.orEmpty()
-        if (isTargetMapPackage(pkg)) {
-            NavStateRepository.appendNotificationLog("通知移除: $pkg")
+        val pkg = sbn?.packageName
+        if (pkg == PKG_GOOGLE_MAPS || pkg == PKG_AMAP || pkg == PKG_AMAP_AUTO) {
             NavStateRepository.updateNavInfo(
                 NavStateRepository.navState.value.copy(
                     isNavigating = false,
@@ -253,12 +231,6 @@ class MapsNotificationListenerService : NotificationListenerService() {
         }
 
         val currentRepo = NavStateRepository.navState.value
-        val generatedLanes = buildLanesForManeuver(maneuver)
-        val trafficBars = listOf(
-            com.xreal.hudnav.model.TrafficSegment("#34C759", 0.6f),
-            com.xreal.hudnav.model.TrafficSegment("#FFCC00", 0.25f),
-            com.xreal.hudnav.model.TrafficSegment("#FF3B30", 0.15f)
-        )
 
         val navInfo = NavInfo(
             maneuver = maneuver,
@@ -277,39 +249,10 @@ class MapsNotificationListenerService : NotificationListenerService() {
             trafficLightState = trafficLightState,
             trafficLightSeconds = trafficLightSeconds,
             mapSource = source,
-            isNavigating = true,
-            lanes = generatedLanes,
-            trafficSegments = trafficBars,
-            routeProgress = 0.35f
+            isNavigating = true
         )
 
         NavStateRepository.updateNavInfo(navInfo)
-    }
-
-    private fun buildLanesForManeuver(maneuver: ManeuverType): List<com.xreal.hudnav.model.LaneItem> {
-        return when (maneuver) {
-            ManeuverType.TURN_RIGHT, ManeuverType.SLIGHT_RIGHT, ManeuverType.SHARP_RIGHT -> listOf(
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
-                com.xreal.hudnav.model.LaneItem("RIGHT", true)
-            )
-            ManeuverType.TURN_LEFT, ManeuverType.SLIGHT_LEFT, ManeuverType.SHARP_LEFT -> listOf(
-                com.xreal.hudnav.model.LaneItem("LEFT", true),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false)
-            )
-            ManeuverType.U_TURN -> listOf(
-                com.xreal.hudnav.model.LaneItem("UTURN", true),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", false)
-            )
-            else -> listOf(
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", true),
-                com.xreal.hudnav.model.LaneItem("STRAIGHT", true),
-                com.xreal.hudnav.model.LaneItem("RIGHT", false)
-            )
-        }
     }
 
     /**

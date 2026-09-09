@@ -52,11 +52,9 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var tvBatteryStatus: TextView
     private lateinit var btnGrantPermission: Button
     private lateinit var btnGrantGps: Button
-    private lateinit var btnGrantOverlay: Button
     private lateinit var btnToggleDemo: Button
     private lateinit var btnEnterBlackout: Button
     private lateinit var layoutBlackoutOverlay: FrameLayout
-    private lateinit var tvNotificationLog: TextView
 
     private lateinit var rgPowerMode: RadioGroup
     private lateinit var rbNormal: RadioButton
@@ -84,20 +82,14 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
     private lateinit var previewViewProgressBar: View
 
     private lateinit var previewLayoutSystemStatus: LinearLayout
-    private lateinit var previewTvPowerModeTag: TextView
     private lateinit var previewTvBatteryIcon: TextView
     private lateinit var previewTvBatteryLevel: TextView
+    private lateinit var previewTvPowerModeTag: TextView
 
     private lateinit var previewLayoutTrafficLight: LinearLayout
     private lateinit var previewViewTrafficLightDot: View
     private lateinit var previewTvTrafficLightSeconds: TextView
     private lateinit var previewTvTrafficLightLabel: TextView
-
-    private lateinit var previewLayoutLaneGuidance: LinearLayout
-    private lateinit var previewLayoutLanesContainer: LinearLayout
-    private lateinit var previewLayoutTrafficBarContainer: View
-    private lateinit var previewLayoutTrafficBarSegments: LinearLayout
-    private lateinit var previewTvVehicleProgressMarker: TextView
 
     private var batteryReceiver: BroadcastReceiver? = null
 
@@ -141,7 +133,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         super.onResume()
         checkNotificationPermission()
         checkGpsPermission()
-        checkOverlayPermission()
     }
 
     override fun onDestroy() {
@@ -160,11 +151,9 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         tvBatteryStatus = findViewById(R.id.tvBatteryStatus)
         btnGrantPermission = findViewById(R.id.btnGrantPermission)
         btnGrantGps = findViewById(R.id.btnGrantGps)
-        btnGrantOverlay = findViewById(R.id.btnGrantOverlay)
         btnToggleDemo = findViewById(R.id.btnToggleDemo)
         btnEnterBlackout = findViewById(R.id.btnEnterBlackout)
         layoutBlackoutOverlay = findViewById(R.id.layoutBlackoutOverlay)
-        tvNotificationLog = findViewById(R.id.tvNotificationLog)
 
         rgPowerMode = findViewById(R.id.rgPowerMode)
         rbNormal = findViewById(R.id.rbNormal)
@@ -184,12 +173,12 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewTvStandbyHint = previewView.findViewById(R.id.tvStandbyHint)
 
         previewLayoutSystemStatus = previewView.findViewById(R.id.layoutSystemStatus)
+        previewTvBatteryIcon = previewView.findViewById(R.id.tvBatteryIcon)
+        previewTvBatteryLevel = previewView.findViewById(R.id.tvBatteryLevel)
         previewTvPowerModeTag = previewView.findViewById(R.id.tvPowerModeTag)
 
         previewLayoutSpeedometer = previewView.findViewById(R.id.layoutSpeedometer)
         previewTvSpeedValue = previewView.findViewById(R.id.tvSpeedValue)
-        previewTvBatteryIcon = previewView.findViewById(R.id.tvBatteryIcon)
-        previewTvBatteryLevel = previewView.findViewById(R.id.tvBatteryLevel)
         previewLayoutCameraAlert = previewView.findViewById(R.id.layoutCameraAlert)
         previewTvCameraTag = previewView.findViewById(R.id.tvCameraTag)
         previewTvCameraDistance = previewView.findViewById(R.id.tvCameraDistance)
@@ -201,12 +190,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewViewTrafficLightDot = previewView.findViewById(R.id.viewTrafficLightDot)
         previewTvTrafficLightSeconds = previewView.findViewById(R.id.tvTrafficLightSeconds)
         previewTvTrafficLightLabel = previewView.findViewById(R.id.tvTrafficLightLabel)
-
-        previewLayoutLaneGuidance = previewView.findViewById(R.id.layoutLaneGuidance)
-        previewLayoutLanesContainer = previewView.findViewById(R.id.layoutLanesContainer)
-        previewLayoutTrafficBarContainer = previewView.findViewById(R.id.layoutTrafficBarContainer)
-        previewLayoutTrafficBarSegments = previewView.findViewById(R.id.layoutTrafficBarSegments)
-        previewTvVehicleProgressMarker = previewView.findViewById(R.id.tvVehicleProgressMarker)
     }
 
     private fun setupListeners() {
@@ -223,30 +206,14 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             )
         }
 
-        btnGrantOverlay.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    android.net.Uri.parse("package:$packageName")
-                )
-                startActivity(intent)
-            }
-        }
-
-        // 黑屏純省電防誤觸模式 (降低螢幕亮度至 0.01f，雙擊螢幕喚醒)
+        // 黑屏純省電防誤觸模式 (雙擊螢幕喚醒)
         btnEnterBlackout.setOnClickListener {
             layoutBlackoutOverlay.visibility = View.VISIBLE
-            val lp = window.attributes
-            lp.screenBrightness = 0.01f // 背光降至最低，AMOLED 零耗電
-            window.attributes = lp
         }
 
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 layoutBlackoutOverlay.visibility = View.GONE
-                val lp = window.attributes
-                lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                window.attributes = lp
                 return true
             }
         })
@@ -305,18 +272,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         displayAssistant.startListening()
     }
 
-    private fun checkOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Settings.canDrawOverlays(this)) {
-                btnGrantOverlay.visibility = View.GONE
-            } else {
-                btnGrantOverlay.visibility = View.VISIBLE
-            }
-        } else {
-            btnGrantOverlay.visibility = View.GONE
-        }
-    }
-
     private fun checkNotificationPermission() {
         val enabled = isNotificationServiceEnabled()
         if (enabled) {
@@ -358,13 +313,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
                 renderPreview(info)
             }
         }
-        lifecycleScope.launch {
-            NavStateRepository.notificationLogs.collectLatest { logs ->
-                if (logs.isNotEmpty()) {
-                    tvNotificationLog.text = logs.takeLast(15).joinToString("\n")
-                }
-            }
-        }
     }
 
     private fun renderPreview(info: NavInfo) {
@@ -372,8 +320,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             previewHudContainer.visibility = View.GONE
             previewLayoutSpeedometer.visibility = View.GONE
             previewLayoutSystemStatus.visibility = View.GONE
-            previewLayoutLaneGuidance.visibility = View.GONE
-            previewLayoutTrafficBarContainer.visibility = View.GONE
             previewTvStandbyHint.visibility = View.VISIBLE
             return
         }
@@ -383,7 +329,7 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
         previewLayoutSpeedometer.visibility = View.VISIBLE
         previewLayoutSystemStatus.visibility = View.VISIBLE
 
-        // 電池電量與省電標籤
+        // 頂部電池電量與省電標籤
         previewTvBatteryIcon.text = if (info.isCharging) "⚡" else "🔋"
         previewTvBatteryLevel.text = "${info.batteryLevel}%"
         previewTvPowerModeTag.text = info.powerMode.label
@@ -459,68 +405,6 @@ class MainActivity : AppCompatActivity(), DisplayAssistant.OnGlassesDisplayListe
             previewLayoutTripSummary.visibility = View.VISIBLE
         } else {
             previewLayoutTripSummary.visibility = View.GONE
-        }
-
-        // 車道線預覽
-        if (info.hasLanes()) {
-            previewLayoutLaneGuidance.visibility = View.VISIBLE
-            previewLayoutLanesContainer.removeAllViews()
-            val density = resources.displayMetrics.density
-            val sizePx = (24 * density).toInt()
-            val marginPx = (4 * density).toInt()
-            for (lane in info.lanes) {
-                val tv = TextView(this).apply {
-                    text = when (lane.iconType) {
-                        "LEFT" -> "↰"
-                        "RIGHT" -> "↱"
-                        "UTURN" -> "↶"
-                        "STRAIGHT_RIGHT" -> "↑↱"
-                        "STRAIGHT_LEFT" -> "↰↑"
-                        else -> "↑"
-                    }
-                    textSize = 13f
-                    gravity = android.view.Gravity.CENTER
-                    val lp = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-                        marginEnd = marginPx
-                    }
-                    layoutParams = lp
-                    setBackgroundResource(R.drawable.bg_hud_badge)
-                    if (lane.isRecommended) {
-                        background.setTint(Color.parseColor("#00E5FF"))
-                        setTextColor(Color.parseColor("#000000"))
-                        typeface = android.graphics.Typeface.DEFAULT_BOLD
-                    } else {
-                        background.setTint(Color.parseColor("#22FFFFFF"))
-                        setTextColor(Color.parseColor("#88FFFFFF"))
-                    }
-                }
-                previewLayoutLanesContainer.addView(tv)
-            }
-        } else {
-            previewLayoutLaneGuidance.visibility = View.GONE
-        }
-
-        // 路況進度條預覽
-        if (info.hasTrafficSegments()) {
-            previewLayoutTrafficBarContainer.visibility = View.VISIBLE
-            previewLayoutTrafficBarSegments.removeAllViews()
-            for (seg in info.trafficSegments) {
-                val v = View(this).apply {
-                    val lp = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        seg.weight
-                    )
-                    layoutParams = lp
-                    setBackgroundColor(Color.parseColor(seg.colorHex))
-                }
-                previewLayoutTrafficBarSegments.addView(v)
-            }
-            val totalHeight = (previewLayoutTrafficBarContainer.height.toFloat()).coerceAtLeast(300f)
-            val clampedProgress = info.routeProgress.coerceIn(0f, 1f)
-            previewTvVehicleProgressMarker.translationY = -(totalHeight * clampedProgress)
-        } else {
-            previewLayoutTrafficBarContainer.visibility = View.GONE
         }
     }
 

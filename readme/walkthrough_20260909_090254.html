@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>XREAL Air 2 Pro 導航 HUD - 升級成果報告</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #E0E0E0; background-color: #121212; padding: 24px; }
+        h1, h2, h3 { color: #00E5FF; }
+        .card { background: #1E1E1E; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #333; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .badge { display: inline-block; background: #00E5FF; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>XREAL Air 2 Pro 導航 HUD - 五大核心功能升級與修復成果</h1>
+    <div class="card">
+        <h2>🛠️ 本次重點修復與功能</h2>
+        <ul>
+            <li><span class="badge">GPS 車速</span> <strong>修復時速顯示 0 或未接資料問題</strong>：採用多 Provider 融合定位 (GPS + Network)，當系統 location.hasSpeed() 為 false 時，自動透過前後經緯度位移與時間差動態換算即時車速，並加入低速防漂移過濾。</li>
+            <li><span class="badge">高德地圖</span> <strong>解除套件名稱限制並增加即時日誌視窗</strong>：模糊比對所有包含 autonavi、amap、map 等地圖應用；手機端主畫面新增「即時通知診斷監聽視窗」，一眼看清通知流入狀況。</li>
+            <li><span class="badge">高德路口</span> <strong>路口車道線導引 (Lane Guidance)</strong>：在導航指標區動態呈現車道方塊，如 <code>[ ↑ ] [ ↑ ] [ ↱ (高亮 Cyan) ]</code>，清晰引導駕駛變換車道。</li>
+            <li><span class="badge">行程進度</span> <strong>右側垂直路況光柱 (Traffic Bar)</strong>：畫面右側新增多色彩色垂直膠囊光柱（綠/黃/紅），自車圖標 🚗 隨行駛里程即時推進。</li>
+            <li><span class="badge">電池圖標</span> <strong>放回 GPS 時速正下方並放大至 24sp</strong>：字體超清晰，支援充電 ⚡ 與低電量變色。</li>
+            <li><span class="badge">鎖屏時鐘</span> <strong>消除待機大時鐘干擾</strong>：Presentation 啟用 <code>TYPE_APPLICATION_OVERLAY</code> 懸浮窗層級；提供一鍵 AMOLED 純黑防誤觸模式（0.01f 亮度，0 耗電，徹底避免觸發系統 AOD/鎖屏時鐘）。</li>
+        </ul>
+    </div>
+</body>
+</html>

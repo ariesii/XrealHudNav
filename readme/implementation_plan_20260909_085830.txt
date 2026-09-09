@@ -1,0 +1,17 @@
+# XREAL Air 2 Pro 旗艦級 AR HUD：車道線、路況條、GPS 修正與防鎖屏實作計畫
+建立時間：2026-09-09 08:58:30
+
+一、核心升級模組：
+1. 路口車道線 (DriveWay / Lane Info)：
+   - 參考高德 AMapLaneInfo 規範，在轉向箭頭下方繪製水平車道導引視圖
+   - 推薦車道以霓虹青綠發光高亮，其餘車道以微光灰呈現
+2. 右側全程路況垂直光柱 (TrafficProgressBar / Traffic Bar)：
+   - 繪製垂直路況條（綠/黃/紅路況區段）與自車行進進度圖標
+3. GPS 速度精準修復：
+   - 融合 GPS + NETWORK + PASSIVE 定位
+   - hasSpeed() 為 false 時自動透過前後經緯度位移與時間差精確換算時速
+4. 電池圖標移回時速下方並放大至 24sp：
+   - 位於 96sp 超大時速正下方，一眼看清電量與模式
+5. 徹底消除休眠時跳出鎖屏時鐘：
+   - Presentation 視窗啟用 TYPE_APPLICATION_OVERLAY 壓制系統鎖屏畫面
+   - 搭配一鍵黑屏純省電防誤觸模式

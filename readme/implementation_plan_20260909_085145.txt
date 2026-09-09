@@ -1,0 +1,19 @@
+# XREAL Air 2 Pro 導航 HUD 五大關鍵問題修正與升級計畫
+建立時間：2026-09-09 08:51:45
+
+一、五大核心問題與技術解決方案：
+1. GPS 速度修正：
+   - 監聽 GPS + NETWORK + PASSIVE 多個 Provider
+   - 當 location.hasSpeed() 為 false 時，自動透過前後經緯度直線距離 (Haversine) 與時間差計算速度
+2. 高德地圖資料接入問題：
+   - 放寬套件名稱比對，包含 autonavi, amap, map 等變體
+   - 控制台新增即時通知日誌診斷，隨時查看手機到底收到了什麼通知
+3. 高德路口資訊與垂直路況光柱進度條 (Traffic Bar)：
+   - 頂部完整保留即時路口安全提醒文字
+   - 右側加入垂直微光路況條（綠/黃/紅）與車輛當前行進位置
+4. 電池圖標放大並移回 GPS 時速下方：
+   - 移除頂部置中，放回 GPS 時速下方
+   - 字體放大至 22sp（加粗），眼角餘光一次收攬
+5. 徹底消除休眠時跳出鎖屏時鐘：
+   - Presentation 採用 TYPE_APPLICATION_OVERLAY 懸浮窗層級（高於系統 Keyguard 鎖屏時鐘）
+   - 啟用前台服務 (Foreground Service) 防止休眠，並支援「黑屏純省電防誤觸模式」

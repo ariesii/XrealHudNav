@@ -1,0 +1,9 @@
+# 任務進度清單 (Task List) - 20260909_090254
+
+- [x] Phase 1: 資料模型擴充 (LaneItem, TrafficSegment, routeProgress, notificationLogs)
+- [x] Phase 2: GPS 模組重構 (多 Provider 融合 + 經緯度時間差動態換算時速)
+- [x] Phase 3: 通知監聽服務升級 (模糊匹配各版本高德地圖、車道與路況光柱解析、診斷日誌)
+- [x] Phase 4: 眼鏡端 HUD 佈局與 Presentation 升級 (電池移至時速下方24sp、車道線導引、右側垂直路況光柱、TYPE_APPLICATION_OVERLAY 壓制鎖屏)
+- [x] Phase 5: 手機控制端升級 (懸浮窗權限申請、通知診斷日誌視窗、AMOLED 黑屏純省電防誤觸 0 nits)
+- [x] Phase 6: 情境模擬器更新 (NavDemoSimulator 包含車道高亮右轉與路況光柱)
+- [x] Phase 7: GitHub Actions 線上編譯 APK 與產出報告

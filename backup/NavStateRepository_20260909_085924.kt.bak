@@ -29,18 +29,6 @@ object NavStateRepository {
     private val _currentPowerMode = MutableStateFlow(PowerMode.NORMAL)
     val currentPowerMode: StateFlow<PowerMode> = _currentPowerMode.asStateFlow()
 
-    private val _notificationLogs = MutableStateFlow<List<String>>(emptyList())
-    val notificationLogs: StateFlow<List<String>> = _notificationLogs.asStateFlow()
-
-    fun appendNotificationLog(log: String) {
-        val current = _notificationLogs.value.toMutableList()
-        if (current.size >= 100) {
-            current.removeAt(0)
-        }
-        current.add(log)
-        _notificationLogs.value = current
-    }
-
     fun updateNavInfo(info: NavInfo) {
         _navState.value = info
     }

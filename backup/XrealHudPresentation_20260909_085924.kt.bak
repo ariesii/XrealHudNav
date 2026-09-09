@@ -44,16 +44,16 @@ class XrealHudPresentation(
     private lateinit var tvTripSummary: TextView
     private lateinit var tvStandbyHint: TextView
 
-    // 頂部系統狀態列 (省電模式)
+    // 頂部系統狀態列 (電池電量與省電模式)
     private lateinit var layoutSystemStatus: LinearLayout
+    private lateinit var tvBatteryIcon: TextView
+    private lateinit var tvBatteryLevel: TextView
     private lateinit var tvPowerModeTag: TextView
 
-    // 右上角超大時速、24sp 電池、測速與紅綠燈
+    // 右上角超大時速、測速與紅綠燈
     private lateinit var layoutSpeedometer: LinearLayout
     private lateinit var tvSpeedValue: TextView
     private lateinit var tvSpeedUnit: TextView
-    private lateinit var tvBatteryIcon: TextView
-    private lateinit var tvBatteryLevel: TextView
     private lateinit var layoutCameraAlert: LinearLayout
     private lateinit var tvCameraTag: TextView
     private lateinit var tvCameraDistance: TextView
@@ -69,26 +69,14 @@ class XrealHudPresentation(
     private lateinit var layoutProgressTrack: View
     private lateinit var viewProgressBar: View
 
-    // 車道線與路況光柱
-    private lateinit var layoutLaneGuidance: LinearLayout
-    private lateinit var layoutLanesContainer: LinearLayout
-    private lateinit var layoutTrafficBarContainer: View
-    private lateinit var layoutTrafficBarSegments: LinearLayout
-    private lateinit var tvVehicleProgressMarker: TextView
-
     private var arrowFlowAnimator: ValueAnimator? = null
     private var isGlanceHidden = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 設定多重防鎖屏穿透 flags 與懸浮窗層級，徹底防止手機按電源鍵時鎖屏時鐘遮擋眼鏡
+        // 設定多重防鎖屏穿透 flags，徹底防止手機按電源鍵時鎖屏時鐘遮擋眼鏡
         window?.apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (android.provider.Settings.canDrawOverlays(context)) {
-                    setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
-                }
-            }
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
             addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
@@ -117,13 +105,13 @@ class XrealHudPresentation(
         tvStandbyHint = findViewById(R.id.tvStandbyHint)
 
         layoutSystemStatus = findViewById(R.id.layoutSystemStatus)
+        tvBatteryIcon = findViewById(R.id.tvBatteryIcon)
+        tvBatteryLevel = findViewById(R.id.tvBatteryLevel)
         tvPowerModeTag = findViewById(R.id.tvPowerModeTag)
 
         layoutSpeedometer = findViewById(R.id.layoutSpeedometer)
         tvSpeedValue = findViewById(R.id.tvSpeedValue)
         tvSpeedUnit = findViewById(R.id.tvSpeedUnit)
-        tvBatteryIcon = findViewById(R.id.tvBatteryIcon)
-        tvBatteryLevel = findViewById(R.id.tvBatteryLevel)
         layoutCameraAlert = findViewById(R.id.layoutCameraAlert)
         tvCameraTag = findViewById(R.id.tvCameraTag)
         tvCameraDistance = findViewById(R.id.tvCameraDistance)
@@ -136,12 +124,6 @@ class XrealHudPresentation(
 
         layoutProgressTrack = findViewById(R.id.layoutProgressTrack)
         viewProgressBar = findViewById(R.id.viewProgressBar)
-
-        layoutLaneGuidance = findViewById(R.id.layoutLaneGuidance)
-        layoutLanesContainer = findViewById(R.id.layoutLanesContainer)
-        layoutTrafficBarContainer = findViewById(R.id.layoutTrafficBarContainer)
-        layoutTrafficBarSegments = findViewById(R.id.layoutTrafficBarSegments)
-        tvVehicleProgressMarker = findViewById(R.id.tvVehicleProgressMarker)
     }
 
     private fun setupFlowAnimation() {
@@ -191,8 +173,6 @@ class XrealHudPresentation(
             hudContainer.visibility = View.GONE
             layoutSpeedometer.visibility = View.GONE
             layoutSystemStatus.visibility = View.GONE
-            layoutLaneGuidance.visibility = View.GONE
-            layoutTrafficBarContainer.visibility = View.GONE
             tvStandbyHint.visibility = View.VISIBLE
             arrowFlowAnimator?.cancel()
             ivManeuver.alpha = 1.0f
@@ -289,79 +269,6 @@ class XrealHudPresentation(
             layoutTripSummary.visibility = View.VISIBLE
         } else {
             layoutTripSummary.visibility = View.GONE
-        }
-
-        // 9. 路口車道線導引
-        renderLanes(info)
-
-        // 10. 右側垂直路況光柱
-        renderTrafficBar(info)
-    }
-
-    private fun renderLanes(info: NavInfo) {
-        if (info.hasLanes()) {
-            layoutLaneGuidance.visibility = View.VISIBLE
-            layoutLanesContainer.removeAllViews()
-            val density = context.resources.displayMetrics.density
-            val sizePx = (32 * density).toInt()
-            val marginPx = (6 * density).toInt()
-
-            for (lane in info.lanes) {
-                val tv = TextView(context).apply {
-                    val symbol = when (lane.iconType) {
-                        "LEFT" -> "↰"
-                        "RIGHT" -> "↱"
-                        "UTURN" -> "↶"
-                        "STRAIGHT_RIGHT" -> "↑↱"
-                        "STRAIGHT_LEFT" -> "↰↑"
-                        else -> "↑"
-                    }
-                    text = symbol
-                    textSize = 17f
-                    gravity = android.view.Gravity.CENTER
-                    val lp = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-                        marginEnd = marginPx
-                    }
-                    layoutParams = lp
-                    setBackgroundResource(R.drawable.bg_hud_badge)
-                    if (lane.isRecommended) {
-                        background.setTint(Color.parseColor("#00E5FF"))
-                        setTextColor(Color.parseColor("#000000"))
-                        typeface = android.graphics.Typeface.DEFAULT_BOLD
-                    } else {
-                        background.setTint(Color.parseColor("#22FFFFFF"))
-                        setTextColor(Color.parseColor("#88FFFFFF"))
-                    }
-                }
-                layoutLanesContainer.addView(tv)
-            }
-        } else {
-            layoutLaneGuidance.visibility = View.GONE
-        }
-    }
-
-    private fun renderTrafficBar(info: NavInfo) {
-        if (info.hasTrafficSegments()) {
-            layoutTrafficBarContainer.visibility = View.VISIBLE
-            layoutTrafficBarSegments.removeAllViews()
-            for (seg in info.trafficSegments) {
-                val v = View(context).apply {
-                    val lp = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        seg.weight
-                    )
-                    layoutParams = lp
-                    setBackgroundColor(Color.parseColor(seg.colorHex))
-                }
-                layoutTrafficBarSegments.addView(v)
-            }
-            // 自下而上推進自車位置
-            val totalHeight = (layoutTrafficBarContainer.height.toFloat()).coerceAtLeast(400f)
-            val clampedProgress = info.routeProgress.coerceIn(0f, 1f)
-            tvVehicleProgressMarker.translationY = -(totalHeight * clampedProgress)
-        } else {
-            layoutTrafficBarContainer.visibility = View.GONE
         }
     }
 

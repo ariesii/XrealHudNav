@@ -100,7 +100,7 @@
                             style="@style/Widget.MaterialComponents.Button.TextButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="通知授權"
+                            android:text="通知設定"
                             android:textColor="@color/hud_accent_cyan" />
 
                         <Button
@@ -110,14 +110,6 @@
                             android:layout_height="wrap_content"
                             android:text="授權 GPS"
                             android:textColor="@color/hud_accent_cyan" />
-
-                        <Button
-                            android:id="@+id/btnGrantOverlay"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="懸浮窗"
-                            android:textColor="@color/hud_accent_amber" />
                     </LinearLayout>
 
                 </LinearLayout>
@@ -133,51 +125,6 @@
                 android:text="進入手機黑屏純省電模式 (防鎖屏時鐘 · AMOLED 0耗電)"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold" />
-
-            <!-- 即時通知診斷監聽日誌卡片 -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardBackgroundColor="#1E1E1E"
-                app:cardCornerRadius="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="即時通知診斷日誌 (高德/Google 地圖狀態)"
-                        android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="顯示手機捕獲到的地圖通知與廣播封包，確保高德地圖資料正常流入"
-                        android:textColor="#90A4AE"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tvNotificationLog"
-                        android:layout_width="match_parent"
-                        android:layout_height="100dp"
-                        android:layout_marginTop="8dp"
-                        android:background="#0A0A0A"
-                        android:fontFamily="monospace"
-                        android:padding="8dp"
-                        android:scrollbars="vertical"
-                        android:text="等待通知或廣播封包流入..."
-                        android:textColor="#00E5FF"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- 省電模型選擇卡片 -->
             <com.google.android.material.card.MaterialCardView

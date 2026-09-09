@@ -1,26 +1,6 @@
 package com.xreal.hudnav.model
 
 /**
- * 車道線單元資訊
- * @param iconType 車道方向指示（如 STRAIGHT, LEFT, RIGHT, STRAIGHT_RIGHT, UTURN 等）
- * @param isRecommended 是否為當前路口推薦行駛車道（高亮顯示）
- */
-data class LaneItem(
-    val iconType: String = "STRAIGHT",
-    val isRecommended: Boolean = false
-)
-
-/**
- * 垂直路況光柱分段資訊
- * @param colorHex 路況顏色十六進制碼（綠 #34C759 順暢、黃 #FFCC00 緩行、紅 #FF3B30 擁堵）
- * @param weight 該路況段在總路程中的權重比例
- */
-data class TrafficSegment(
-    val colorHex: String = "#34C759",
-    val weight: Float = 1.0f
-)
-
-/**
  * 紅綠燈號誌狀態
  */
 enum class TrafficLightState(val label: String, val colorHex: String) {
@@ -62,15 +42,10 @@ data class NavInfo(
     val isCharging: Boolean = false,
     val powerMode: PowerMode = PowerMode.NORMAL,
     val mapSource: String = "Google Maps",
-    val isNavigating: Boolean = false,
-    val lanes: List<LaneItem> = emptyList(),
-    val trafficSegments: List<TrafficSegment> = emptyList(),
-    val routeProgress: Float = 0.0f
+    val isNavigating: Boolean = false
 ) {
     fun isSpeeding(): Boolean = currentSpeed > speedLimit && speedLimit > 0
     fun hasTrafficLight(): Boolean = trafficLightState != TrafficLightState.NONE && trafficLightSeconds != null && trafficLightSeconds > 0
-    fun hasLanes(): Boolean = lanes.isNotEmpty()
-    fun hasTrafficSegments(): Boolean = trafficSegments.isNotEmpty()
 
     fun getFullRoadDisplay(): String {
         return if (!roadNumber.isNullOrBlank()) {
