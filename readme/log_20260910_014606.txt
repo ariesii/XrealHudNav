@@ -1,0 +1,115 @@
+================================================================================
+Antigravity 專案開發操作與 GitHub 指令完整學習日誌 (Operation & Git Log)
+記錄時間: 2026-09-10 01:46:06
+專案名稱: XrealHudNav (XREAL Air 2 Pro 智慧導航 HUD)
+================================================================================
+
+【階段目標】
+1. 解決 Google Maps 導航時「轉向箭頭除右轉外其餘圖形無法顯示」之問題。
+2. 實現「Google Maps 原版官方導航圖標訊號直通截取」，直接將官方最高畫質 Bitmap 搬上 HUD。
+3. 建立標準化操作紀錄流程，完整保留所有終端機指令、Git/GitHub Actions 流程與代碼演進，利於學習。
+
+--------------------------------------------------------------------------------
+【第一步：程式碼備份 (遵守每次修改前備份 timestamp 規範)】
+--------------------------------------------------------------------------------
+執行指令 (PowerShell):
+Copy-Item 'app/src/main/java/com/xreal/hudnav/model/NavInfo.kt' 'backup/NavInfo_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/model/ManeuverType.kt' 'backup/ManeuverType_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/presentation/XrealHudPresentation.kt' 'backup/XrealHudPresentation_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/service/MapsNotificationListenerService.kt' 'backup/MapsNotificationListenerService_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/MainActivity.kt' 'backup/MainActivity_20260910_014500.kt.bak'
+
+目的說明:
+- 在修改任何 Android 原始碼前，先將原檔複製至 backup/ 目錄，並附上當時時間戳記，確保版本隨時可追溯、回滾，且不污染 res/ 資源資料夾。
+
+--------------------------------------------------------------------------------
+【第二步：核心架構修改與代碼實作】
+--------------------------------------------------------------------------------
+1. 模型擴充 (NavInfo.kt):
+   - 在 NavInfo 資料類別中新增 `val customIconBitmap: Bitmap? = null` 屬性。
+   - 作用：用以承載由 Google 地圖通知中直接截取到的原創 Bitmap 圖標，避免被粗糙的枚舉降級。
+
+2. 關鍵字擴展 (ManeuverType.kt):
+   - 擴充 `ManeuverType.fromText()`：
+     - 加入「向左微轉」、「靠左」、「走左側」 -> SLIGHT_LEFT
+     - 加入「向右微轉」、「靠右」、「走右側」、「下交流道」 -> SLIGHT_RIGHT
+     - 加入「圓環」、「出口」、「roundabout」 -> 專屬圓環處理
+     - 解決過去因文字無法命中而退回預設直行的問題。
+
+3. 原生圖標截取引擎 (MapsNotificationListenerService.kt):
+   - 實作全維度官方圖標截取函式 `extractBitmapFromNotification(notification, targetPackage)`：
+     a. 優先調用 `notification.getLargeIcon()?.loadDrawable(this)` 取得原創高畫質向量轉點陣圖 (128x128)。
+     b. 次選 `notification.extras.getParcelable(Notification.EXTRA_LARGE_ICON)`。
+     c. 備選 `notification.getSmallIcon()?.loadDrawable(packageContext)`。
+   - 將獲取的 `officialBitmap` 直接傳入 `NavInfo.customIconBitmap`。
+   - 日誌記錄：`NavStateRepository.appendNotificationLog("[$source] 成功截取官方原版導航圖標 (${bmp.width}x${bmp.height})")`。
+
+4. 畫面渲染管線 (XrealHudPresentation.kt & MainActivity.kt):
+   - 眼鏡端 HUD 與手機預覽端之 `ivManeuver` 一致改為：
+     ```kotlin
+     if (info.customIconBitmap != null) {
+         ivManeuver.setImageBitmap(info.customIconBitmap)
+     } else {
+         ivManeuver.setImageResource(info.maneuver.iconResId)
+     }
+     ```
+   - 徹底實現「原汁原味 Google Maps 圖形」直接顯示。
+
+--------------------------------------------------------------------------------
+【第三步：Git 版本控制與 GitHub 遠端操作指令】
+--------------------------------------------------------------------------------
+1. 查看工作區檔案變動狀態：
+   git status
+   git diff app/src/main/java/com/xreal/hudnav/model/NavInfo.kt ...
+
+2. 暫存變更檔案至 Git Index：
+   git add app/ backup/ readme/
+
+3. 提交變更至本地儲存庫 (遵循繁體中文台灣用語規範)：
+   git commit -m "feat: 深度截取 Google Maps 官方原版導航圖標訊號，直接於 HUD 呈現原生向量轉向圖"
+
+4. 推送至 GitHub 遠端 main 分支：
+   git push origin main
+   (此動作會自動觸發遠端 .github/workflows/android-build.yml 自動化編譯流水線)
+
+--------------------------------------------------------------------------------
+【第四步：GitHub Actions 雲端 CI/CD 自動化編譯監控】
+--------------------------------------------------------------------------------
+1. 查詢最新觸發的 Actions 任務列表：
+   gh run list --limit 2
+   輸出結果：
+   queued | feat: 深度截取 Google Maps 官方原版導航圖標訊號... | 線上自動編譯 Android APK | main | push | Run ID: 34384509162
+
+2. 即時監聽遠端編譯進度直至結束：
+   gh run watch 34384509162
+   編譯耗時：3m 24s，編譯狀態：✓ Complete job (成功)
+
+--------------------------------------------------------------------------------
+【第五步：下載發佈成品與儲存庫同步】
+--------------------------------------------------------------------------------
+1. 刪除本地舊版 APK：
+   Remove-Item 'release-apk/XrealHudNav-debug-apk/app-debug.apk' -Force -ErrorAction SilentlyContinue
+
+2. 下載 GitHub Actions 構建產物 (Artifact)：
+   gh run download 34384509162 --dir release-apk
+
+3. 檢查確認檔案大小與修改時間：
+   Get-Item 'release-apk/XrealHudNav-debug-apk/app-debug.apk' | Select-Object Name, Length, LastWriteTime
+   輸出結果：app-debug.apk (5,877,262 bytes，約 5.88 MB)
+
+4. 將最新編譯成品提交回 Git 倉庫：
+   git add release-apk/XrealHudNav-debug-apk/app-debug.apk
+   git commit -m "chore: 更新支援 Google Maps 原版導航圖標訊號直通之最新 debug APK"
+   git push origin main
+   最新 Commit SHA: 3b228f8
+
+================================================================================
+【學習要點總結 (Takeaway)】
+================================================================================
+1. Android 跨 App 監聽核心技巧：
+   Notification 裡往往含有官方 App 最真實的 Bitmap 資料（如 LargeIcon）。直接截取 Bitmap 比自行解析文字來猜測枚舉更穩健、更精美。
+2. GitHub CLI (gh) 實用技巧：
+   - `gh run list`：快速查看 Actions 執行狀態。
+   - `gh run watch <RunID>`：在命令列即時盯盤編譯進度。
+   - `gh run download <RunID> --dir <路徑>`：免開瀏覽器，一鍵下載 CI 產出的 APK。
+================================================================================

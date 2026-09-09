@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>操作與指令學習日誌 - 20260910_014606</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Courier New', monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+            background: #0D1117;
+            color: #C9D1D9;
+            padding: 24px;
+            line-height: 1.6;
+        }
+        h1 { color: #58A6FF; border-bottom: 2px solid #30363D; padding-bottom: 8px; }
+        h2 { color: #7EE787; margin-top: 24px; border-bottom: 1px solid #21262D; padding-bottom: 4px; }
+        .card {
+            background: #161B22;
+            border: 1px solid #30363D;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        pre {
+            background: #090D13;
+            border: 1px solid #30363D;
+            border-radius: 6px;
+            padding: 12px;
+            color: #FF7B72;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        code { color: #79C0FF; }
+        .badge {
+            display: inline-block;
+            background: #238636;
+            color: #FFFFFF;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-git { background: #1F6FEB; }
+        .badge-gh { background: #8957E5; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+    <h1>📖 Antigravity 專案操作與 GitHub 指令學習日誌</h1>
+    <p><b>記錄時間：</b>2026-09-10 01:46:06 | <b>專案：</b>XrealHudNav (XREAL Air 2 Pro 導航 HUD)</p>
+
+    <div class="card">
+        <h3>🎯 本階段任務目標</h3>
+        <p>解決 Google Maps 轉向箭頭除向右轉外其餘無法顯示之問題，實現 <b>Google Maps 原版官方導航圖標直通截取</b>，並將完整終端機與 GitHub Actions 操作命令建檔以利學習。</p>
+    </div>
+
+    <h2>步驟一：修改前檔案防護與時間戳備份</h2>
+    <div class="card">
+        <span class="badge">PowerShell</span>
+        <pre>Copy-Item 'app/src/main/java/com/xreal/hudnav/model/NavInfo.kt' 'backup/NavInfo_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/model/ManeuverType.kt' 'backup/ManeuverType_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/presentation/XrealHudPresentation.kt' 'backup/XrealHudPresentation_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/service/MapsNotificationListenerService.kt' 'backup/MapsNotificationListenerService_20260910_014500.kt.bak'
+Copy-Item 'app/src/main/java/com/xreal/hudnav/MainActivity.kt' 'backup/MainActivity_20260910_014500.kt.bak'</pre>
+        <p><b>學習重點：</b>修改程式碼前必先備份至獨立的 <code>backup/</code> 目錄，絕不可放在 <code>res/</code> 內，避免 Android AAPT 編譯器因未知副檔名產生報錯。</p>
+    </div>
+
+    <h2>步驟二：核心程式碼重構要點</h2>
+    <div class="card">
+        <ul>
+            <li><code>NavInfo.kt</code>：新增 <code>customIconBitmap: Bitmap?</code> 屬性，突破固定 enum 限制。</li>
+            <li><code>MapsNotificationListenerService.kt</code>：實作 <code>extractBitmapFromNotification</code>，優先調用 <code>Notification.getLargeIcon()</code> 提取 Google Maps 原版 128x128 向量轉點陣圖。</li>
+            <li><code>XrealHudPresentation.kt</code> & <code>MainActivity.kt</code>：改為優先繪製 <code>customIconBitmap</code>，實現圓環、微偏、岔路等原汁原味呈現。</li>
+            <li><code>ManeuverType.kt</code>：擴展「向左微轉」、「走左側」、「下交流道」等關鍵詞對應。</li>
+        </ul>
+    </div>
+
+    <h2>步驟三：Git 版本控制與遠端推送</h2>
+    <div class="card">
+        <span class="badge badge-git">Git</span>
+        <pre># 1. 查看修改差異
+git diff app/
+
+# 2. 暫存變更
+git add app/ backup/ readme/
+
+# 3. 提交本地 Commit
+git commit -m "feat: 深度截取 Google Maps 官方原版導航圖標訊號，直接於 HUD 呈現原生向量轉向圖"
+
+# 4. 推送至遠端儲存庫觸發 CI/CD
+git push origin main</pre>
+        <p><b>學習重點：</b>Commit Message 使用台灣用語與明確的 feat/fix/chore 前綴，有助於追蹤變更紀錄。</p>
+    </div>
+
+    <h2>步驟四：GitHub Actions (CI/CD) 監控與成品下載</h2>
+    <div class="card">
+        <span class="badge badge-gh">GitHub CLI</span>
+        <pre># 1. 查詢最新自動編譯任務 Run ID
+gh run list --limit 2
+
+# 2. 終端機即時監看編譯進度
+gh run watch 34384509162
+
+# 3. 編譯成功後，下載雲端產出的 APK
+Remove-Item 'release-apk/XrealHudNav-debug-apk/app-debug.apk' -Force -ErrorAction SilentlyContinue
+gh run download 34384509162 --dir release-apk
+
+# 4. 將編譯好的 APK 提交並推送到 GitHub
+git add release-apk/XrealHudNav-debug-apk/app-debug.apk
+git commit -m "chore: 更新支援 Google Maps 原版導航圖標訊號直通之最新 debug APK"
+git push origin main</pre>
+        <p><b>學習重點：</b>善用 <code>gh</code> 命令列工具，無需開啟瀏覽器即可完全掌控 GitHub Actions 流程並自動化下載最新安裝檔。</p>
+    </div>
+</body>
+</html>
